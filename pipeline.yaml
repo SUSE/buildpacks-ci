@@ -1,0 +1,33 @@
+---
+resources:
+- name: ruby-buildpack
+  type: git
+  source:
+    uri: git@github.com:SUSE/cf-ruby-buildpack.git
+    private_key: {{github-private-key}}
+    branch: aduffeck_obs_build
+
+# TODO: Implement a cleanup step to remove left over apps and buildpacks from previous (failed) runs
+jobs:
+- name: brats
+  plan:
+  - get: ruby-buildpack
+    trigger: true
+  - task: brats
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: jimmykarily/brats # TODO: push this to splatform
+      inputs:
+        - name: ruby-buildpack
+      params:
+        PROXY_SCHEME: {{brats-proxy-scheme}}
+        PROXY_PORT: {{brats-proxy-port}}
+        PROXY_USERNAME: {{brats-proxy-username}}
+        PROXY_PASSWORD: {{brats-proxy-password}}
+        PROXY_HOST: {{brats-proxy-host}}
+        CF_STACK: {{brats-cf-stack}}
+      run:
+        path: ruby-buildpack/scripts/brats.sh
