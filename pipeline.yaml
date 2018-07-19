@@ -11,8 +11,6 @@ resources:
     uri: git@github.com:SUSE/cf-ruby-buildpack.git
     private_key: {{github-private-key}}
     branch: aduffeck_obs_build
-
-# TODO: Implement a cleanup step to remove left over apps and buildpacks from previous (failed) runs
 jobs:
 - name: brats
   plan:
@@ -26,7 +24,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: jimmykarily/brats # TODO: push this to splatform
+          repository: splatform/concourse-brats
       inputs:
         - name: ci
       params:
@@ -43,7 +41,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: jimmykarily/brats # TODO: push this to splatform
+          repository: splatform/concourse-brats
       inputs:
         - name: ruby-buildpack
         - name: ci
