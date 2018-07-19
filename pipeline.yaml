@@ -1,5 +1,10 @@
 ---
 resources:
+- name: ci
+  type: git
+  source:
+    uri: git@github.com:SUSE/buildpacks-ci.git
+    private_key: {{github-private-key}}
 - name: ruby-buildpack
   type: git
   source:
@@ -13,6 +18,25 @@ jobs:
   plan:
   - get: ruby-buildpack
     trigger: true
+  - get: ci
+    trigger: true
+  - task: cleanup
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: jimmykarily/brats # TODO: push this to splatform
+      inputs:
+        - name: ci
+      params:
+        CF_ENDPOINT: {{brats-cf-endpoint}}
+        CF_USERNAME: {{brats-cf-username}}
+        CF_PASSWORD: {{brats-cf-password}}
+        CF_ORG: {{brats-cf-org}}
+        CF_SPACE: {{brats-cf-space}}
+      run:
+        path: ci/tasks/cleanup.sh
   - task: brats
     config:
       platform: linux
@@ -22,6 +46,7 @@ jobs:
           repository: jimmykarily/brats # TODO: push this to splatform
       inputs:
         - name: ruby-buildpack
+        - name: ci
       params:
         PROXY_SCHEME: {{brats-proxy-scheme}}
         PROXY_PORT: {{brats-proxy-port}}
@@ -29,5 +54,10 @@ jobs:
         PROXY_PASSWORD: {{brats-proxy-password}}
         PROXY_HOST: {{brats-proxy-host}}
         CF_STACK: {{brats-cf-stack}}
+        CF_ENDPOINT: {{brats-cf-endpoint}}
+        CF_USERNAME: {{brats-cf-username}}
+        CF_PASSWORD: {{brats-cf-password}}
+        CF_ORG: {{brats-cf-org}}
+        CF_SPACE: {{brats-cf-space}}
       run:
-        path: ruby-buildpack/scripts/brats.sh
+        path: ci/tasks/brats.sh
