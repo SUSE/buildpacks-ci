@@ -1,6 +1,6 @@
 #!/bin/bash
 
-source cf_login.sh
+source ci/tasks/cf_login.sh
 
 # Delete leftover apps
 for app in $(cf apps | grep "cutlass-" | awk '{print $1}'); do cf delete -f $app; done
