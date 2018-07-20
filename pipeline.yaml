@@ -46,6 +46,7 @@ jobs:
         - name: ruby-buildpack
         - name: ci
       params:
+        GINKGO_NODES: 1
         PROXY_SCHEME: {{brats-proxy-scheme}}
         PROXY_PORT: {{brats-proxy-port}}
         PROXY_USERNAME: {{brats-proxy-username}}

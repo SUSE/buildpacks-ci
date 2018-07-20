@@ -6,4 +6,4 @@ source ci/tasks/cf_login.sh
 for app in $(cf apps | grep "cutlass-" | awk '{print $1}'); do cf delete -f $app; done
 
 # Delete leftover buildpacks
-for buildpack in $(cf buildpack | grep "brats_" | awk '{print $1}'); do cf delete-buildpack -f $buildpack; done
+for buildpack in $(cf buildpacks | grep "brats_" | awk '{print $1}'); do cf delete-buildpack -f $buildpack; done
