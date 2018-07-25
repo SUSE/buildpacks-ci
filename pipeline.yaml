@@ -1,19 +1,26 @@
 ---
+resource_types:
+- name: lftp-resource
+  type: docker-image
+  source:
+    repository: machinerytool/concourse-lftp-resource
+    tag: latest
+
 resources:
+- name: lftp.obs-buildpacks-staging
+  type: lftp-resource
+  source:
+    url: https://download.opensuse.org/repositories/Cloud:/Platform:/buildpacks/buildpacks/src/
+    regexp: ruby-buildpack-(.*).src.rpm
 - name: ci
   type: git
   source:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
-- name: ruby-buildpack
-  type: git
-  source:
-    uri: git@github.com:SUSE/cf-ruby-buildpack.git
-    private_key: {{github-private-key}}
 jobs:
 - name: brats
   plan:
-  - get: ruby-buildpack
+  - get: lftp.obs-buildpacks-staging
     trigger: true
   - get: ci
     trigger: true
@@ -42,7 +49,7 @@ jobs:
         source:
           repository: splatform/concourse-brats
       inputs:
-        - name: ruby-buildpack
+        - name: lftp.obs-buildpacks-staging
         - name: ci
       params:
         GINKGO_NODES: 1
