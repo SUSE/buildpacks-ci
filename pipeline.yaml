@@ -17,6 +17,11 @@ resources:
   source:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
+- name: ruby-buildpack
+  type: git
+  source:
+    uri: git@github.com:SUSE/cf-ruby-buildpack.git
+    private_key: {{github-private-key}}
 jobs:
 - name: brats
   plan:
@@ -24,6 +29,7 @@ jobs:
     trigger: true
   - get: ci
     trigger: true
+  - get: ruby-buildpack
   - task: cleanup
     config:
       platform: linux
@@ -49,6 +55,7 @@ jobs:
         source:
           repository: splatform/concourse-brats
       inputs:
+        - name: ruby-buildpack
         - name: lftp.obs-buildpacks-staging
         - name: ci
       params:
