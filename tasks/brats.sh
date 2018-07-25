@@ -4,7 +4,7 @@ set -e
 
 source ci/tasks/cf_login.sh
 
-cd lftp.obs-buildpack-staging
+cd lftp.obs-buildpacks-staging
 rpm2cpio *.src.rpm | cpio -idmv
 tar xf v*.tar.gz
 cd cf-ruby-buildpack*
