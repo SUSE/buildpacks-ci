@@ -10,7 +10,6 @@ resources:
   source:
     uri: git@github.com:SUSE/cf-ruby-buildpack.git
     private_key: {{github-private-key}}
-    branch: aduffeck_obs_build
 jobs:
 - name: brats
   plan:
