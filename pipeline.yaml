@@ -20,7 +20,7 @@ resources:
 - name: ruby-buildpack
   type: git
   source:
-    uri: git@github.com:SUSE/cf-ruby-buildpack.git
+    uri: git@github.com:cloudfoundry/ruby-buildpack.git
     private_key: {{github-private-key}}
 jobs:
 - name: brats
