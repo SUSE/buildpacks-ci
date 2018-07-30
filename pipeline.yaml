@@ -1,5 +1,9 @@
 ---
 resource_types:
+- name: email
+  type: docker-image
+  source:
+    repository: pcfseceng/email-resource
 - name: lftp-resource
   type: docker-image
   source:
@@ -7,29 +11,57 @@ resource_types:
     tag: latest
 
 resources:
+- name: email.suse
+  type: email
+  source:
+    smtp:
+      anonymous: true
+      host: imap.suse.de
+      port: "587"
+      ca_cert: |
+        ((notification-ca-cert))
+    from: "cf-ci-bot@suse.de"
+    to: [ "paas-notifications@suse.de" ]
+  check_every: 60m
 - name: lftp.obs-buildpacks-staging
   type: lftp-resource
   source:
-    url: https://download.opensuse.org/repositories/Cloud:/Platform:/buildpacks/buildpacks/src/
+    url: https://download.opensuse.org/repositories/Cloud:/Platform:/buildpacks:/staging/buildpacks/src/
     regexp: ruby-buildpack-(.*).src.rpm
 - name: ci
   type: git
   source:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
+    branch: add_release_task
 - name: ruby-buildpack
   type: git
   source:
     uri: git@github.com:SUSE/cf-ruby-buildpack.git
     private_key: {{github-private-key}}
+- name: git.ruby_buildpack-release
+  type: git
+  source:
+    uri: git@github.com:SUSE/cf-ruby-buildpack-release.git
+    private_key: {{github-private-key}}
+    branch: master
+- name: s3-buildpacks
+  type: s3
+  source:
+    bucket: cf-opensusefs2
+    regexp: ruby_buildpack-(.*).zip
+    access_key_id: {{aws-access-key}}
+    secret_access_key: {{aws-secret-key}}
+    region_name: us-east-1
 jobs:
 - name: brats
+  serial: true
   plan:
   - get: lftp.obs-buildpacks-staging
     trigger: true
   - get: ci
-    trigger: true
   - get: ruby-buildpack
+  - get: s3-buildpacks
   - task: cleanup
     config:
       platform: linux
@@ -57,7 +89,10 @@ jobs:
       inputs:
         - name: ruby-buildpack
         - name: lftp.obs-buildpacks-staging
+        - name: s3-buildpacks
         - name: ci
+      outputs:
+        - name: brats-ouput
       params:
         GINKGO_NODES: 1
         PROXY_SCHEME: {{brats-proxy-scheme}}
@@ -71,5 +106,50 @@ jobs:
         CF_PASSWORD: {{brats-cf-password}}
         CF_ORG: {{brats-cf-org}}
         CF_SPACE: {{brats-cf-space}}
+        PROJECT: "Cloud:Platform:buildpacks:staging"
       run:
         path: ci/tasks/brats.sh
+- name: release
+  plan:
+  - get: ci
+  - get: git.ruby_buildpack-release
+  - get: lftp.obs-buildpacks-staging
+    passed:
+      - brats
+    trigger: true
+  - task: publish
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source: 
+          repository: splatform/binary_builder_obs_opensuse
+      inputs:
+        - name: ci
+        - name: lftp.obs-buildpacks-staging
+        - name: git.ruby_buildpack-release
+      outputs:
+        - name: s3-output
+        - name: git-output
+        - name: git-tag
+        - name: mail-output
+      params:
+        OBS_USERNAME:  {{obs-username}}
+        OBS_PASSWORD:  {{obs-password}}
+        GIT_MAIL: {{github-username}}
+        GIT_USER: suse-cf-ci-bot
+        PROJECT: "Cloud:Platform:buildpacks:staging"
+      run:
+        path: ci/tasks/release_buildpack.sh
+  - put: s3-buildpacks
+    params:
+      file: s3-output/*.zip
+      acl: public-read
+  - put: git.ruby_buildpack-release
+    params:
+      repository: git-output
+      tag: git-tag/tag
+  - put: email.suse
+    params:
+      subject: mail-output/subject.txt
+      body: mail-output/body.txt
