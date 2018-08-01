@@ -16,12 +16,12 @@ resources:
   source:
     smtp:
       anonymous: true
-      host: imap.suse.de
-      port: "587"
+      host: {{notification-imap-alternate-host}}
+      port: {{notification-imap-alternate-port}}
       ca_cert: |
         ((notification-ca-cert))
-    from: "cf-ci-bot@suse.de"
-    to: [ "paas-notifications@suse.de" ]
+    from: {{notification-from}}
+    to: [ {{notification-to}} ]
   check_every: 60m
 - name: lftp.obs-buildpacks-staging
   type: lftp-resource
@@ -33,7 +33,6 @@ resources:
   source:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
-    branch: add_release_task
 - name: ruby-buildpack
   type: git
   source:
@@ -106,7 +105,7 @@ jobs:
         CF_PASSWORD: {{brats-cf-password}}
         CF_ORG: {{brats-cf-org}}
         CF_SPACE: {{brats-cf-space}}
-        PROJECT: "Cloud:Platform:buildpacks:staging"
+        PROJECT: {{obs-buildpacks-staging-project}}
       run:
         path: ci/tasks/brats.sh
 - name: release
@@ -138,7 +137,8 @@ jobs:
         OBS_PASSWORD:  {{obs-password}}
         GIT_MAIL: {{github-username}}
         GIT_USER: suse-cf-ci-bot
-        PROJECT: "Cloud:Platform:buildpacks:staging"
+        PROJECT: {{obs-buildpacks-staging-project}}
+
       run:
         path: ci/tasks/release_buildpack.sh
   - put: s3-buildpacks

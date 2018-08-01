@@ -18,7 +18,7 @@ SHORT_CHECKSUM=$(echo $FILENAME | sed -En 's/.*-([0-9a-f]+).zip/\1/p')
 DOWNLOAD_CHECKSUM=$(sha1sum $FILENAME | cut -d' ' -f1)
 DOWNLOAD_SIZE=$(du -b $FILENAME)
 if [[ ${DOWNLOAD_CHECKSUM:0:8} != $SHORT_CHECKSUM ]]; then
-  echo "The file checksum did mismatch"
+  echo "The file checksum did not match"
   exit 1
 fi
 popd
