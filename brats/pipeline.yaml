@@ -23,20 +23,31 @@ resources:
     from: {{notification-from}}
     to: [ {{notification-to}} ]
   check_every: 60m
-- name: lftp.obs-buildpacks-staging
+- name: lftp.obs-buildpacks-staging-ruby
   type: lftp-resource
   source:
     url: https://download.opensuse.org/repositories/Cloud:/Platform:/buildpacks:/staging/buildpacks/src/
     regexp: ruby-buildpack-(.*).src.rpm
+- name: lftp.obs-buildpacks-staging-go
+  type: lftp-resource
+  source:
+    url: https://download.opensuse.org/repositories/Cloud:/Platform:/buildpacks:/staging/buildpacks/src/
+    regexp: go-buildpack-(.*).src.rpm
 - name: ci
   type: git
   source:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
+    branch: add-go-brats
 - name: ruby-buildpack
   type: git
   source:
     uri: git@github.com:SUSE/cf-ruby-buildpack.git
+    private_key: {{github-private-key}}
+- name: go-buildpack
+  type: git
+  source:
+    uri: git@github.com:SUSE/cf-go-buildpack.git
     private_key: {{github-private-key}}
 - name: git.ruby_buildpack-release
   type: git
@@ -53,10 +64,10 @@ resources:
     secret_access_key: {{aws-secret-key}}
     region_name: us-east-1
 jobs:
-- name: brats
+- name: ruby-brats
   serial: true
   plan:
-  - get: lftp.obs-buildpacks-staging
+  - get: lftp.obs-buildpacks-staging-ruby
     trigger: true
   - get: ci
   - get: ruby-buildpack
@@ -79,6 +90,8 @@ jobs:
       run:
         path: ci/brats/tasks/cleanup.sh
   - task: brats
+    input_mapping:
+      buildpack: ruby-buildpack
     config:
       platform: linux
       image_resource:
@@ -86,8 +99,8 @@ jobs:
         source:
           repository: splatform/concourse-brats
       inputs:
-        - name: ruby-buildpack
-        - name: lftp.obs-buildpacks-staging
+        - name: buildpack
+        - name: lftp.obs-buildpacks-staging-ruby
         - name: s3-buildpacks
         - name: ci
       outputs:
@@ -114,13 +127,13 @@ jobs:
       params:
         subject: mail-output/subject-failed.txt
         body: mail-output/body-failed.txt
-- name: release
+- name: ruby-release
   plan:
   - get: ci
   - get: git.ruby_buildpack-release
-  - get: lftp.obs-buildpacks-staging
+  - get: lftp.obs-buildpacks-staging-ruby
     passed:
-      - brats
+      - ruby-brats
     trigger: true
   - task: publish
     config:
@@ -131,7 +144,7 @@ jobs:
           repository: splatform/binary_builder_obs_opensuse
       inputs:
         - name: ci
-        - name: lftp.obs-buildpacks-staging
+        - name: lftp.obs-buildpacks-staging-ruby
         - name: git.ruby_buildpack-release
       outputs:
         - name: s3-output
@@ -159,3 +172,61 @@ jobs:
     params:
       subject: mail-output/subject.txt
       body: mail-output/body.txt
+- name: go-brats
+  serial: true
+  plan:
+  - get: lftp.obs-buildpacks-staging-go
+    trigger: true
+  - get: ci
+  - get: go-buildpack
+  - get: s3-buildpacks
+  - task: cleanup
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/concourse-brats
+      inputs:
+        - name: ci
+      params:
+        CF_ENDPOINT: {{brats-cf-endpoint}}
+        CF_USERNAME: {{brats-cf-username}}
+        CF_PASSWORD: {{brats-cf-password}}
+        CF_ORG: {{brats-cf-org}}
+        CF_SPACE: {{brats-cf-space}}
+      run:
+        path: ci/tasks/cleanup.sh
+  - task: brats
+    input_mapping:
+      buildpack: go-buildpack
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/concourse-brats
+      inputs:
+        - name: buildpack
+        - name: lftp.obs-buildpacks-staging-go
+        - name: s3-buildpacks
+        - name: ci
+      outputs:
+        - name: brats-ouput
+        - name: mail-output
+      params:
+        GINKGO_NODES: 1
+        PROXY_SCHEME: {{brats-proxy-scheme}}
+        PROXY_PORT: {{brats-proxy-port}}
+        PROXY_USERNAME: {{brats-proxy-username}}
+        PROXY_PASSWORD: {{brats-proxy-password}}
+        PROXY_HOST: {{brats-proxy-host}}
+        CF_STACK: {{brats-cf-stack}}
+        CF_ENDPOINT: {{brats-cf-endpoint}}
+        CF_USERNAME: {{brats-cf-username}}
+        CF_PASSWORD: {{brats-cf-password}}
+        CF_ORG: {{brats-cf-org}}
+        CF_SPACE: {{brats-cf-space}}
+        PROJECT: {{obs-buildpacks-staging-project}}
+      run:
+        path: ci/tasks/brats.sh

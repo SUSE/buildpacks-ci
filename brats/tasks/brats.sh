@@ -2,7 +2,7 @@
 
 set -e
 
-pushd lftp.obs-buildpacks-staging > /dev/null
+pushd lftp.obs-buildpacks-staging-* > /dev/null
 VERSION=$(ls *.src.rpm | sed -E 's/.*buildpack-([0-9.].+)-.*/\1/')
 BUILDPACK=$(ls *.src.rpm | sed -E 's/(.*buildpack-[0-9.].+)-.*/\1/')
 popd > /dev/null
@@ -21,15 +21,14 @@ fi
 
 source ci/tasks/cf_login.sh
 
-rm ruby-buildpack/manifest.yml ruby-buildpack/VERSION
+rm buildpack/manifest.yml buildpack/VERSION
 
-cd lftp.obs-buildpacks-staging
+cd lftp.obs-buildpacks-staging-*
 
 rpm2cpio *.src.rpm | cpio -idmv
 tar xf v*.tar.gz
-cp cf-ruby-buildpack-*/manifest.yml ../ruby-buildpack/
-cp cf-ruby-buildpack-*/VERSION ../ruby-buildpack/
-cd ../ruby-buildpack
+cp *-buildpack-*/manifest.yml *-buildpack-*/VERSION ../buildpack/
+cd ../buildpack
 
 scripts/brats.sh
 
