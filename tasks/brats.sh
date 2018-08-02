@@ -14,7 +14,7 @@ ${BUILDPACK} has not been build (already released)
 EOF
 cat << EOF > mail-output/body-failed.txt
 ${BUILDPACK} has not been build (already released) 
-See https://ci.howdoi.website/teams/main/pipelines/buildpacks-ci for details.
+See concourse for details.
 EOF
   exit 1
 fi
@@ -39,6 +39,6 @@ ${BUILDPACK} has not been build (BRATS have failed)
 EOF
 cat << EOF > mail-output/body-failed.txt
 ${BUILDPACK} has not been build (BRATS have failed) 
-See https://ci.howdoi.website/teams/main/pipelines/buildpacks-ci for details.
+See concourse for details.
 EOF
 fi
