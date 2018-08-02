@@ -92,6 +92,7 @@ jobs:
         - name: ci
       outputs:
         - name: brats-ouput
+        - name: mail-output
       params:
         GINKGO_NODES: 1
         PROXY_SCHEME: {{brats-proxy-scheme}}
@@ -108,6 +109,11 @@ jobs:
         PROJECT: {{obs-buildpacks-staging-project}}
       run:
         path: ci/tasks/brats.sh
+    on_failure: 
+      put: email.suse
+      params:
+        subject: mail-output/subject-failed.txt
+        body: mail-output/body-failed.txt
 - name: release
   plan:
   - get: ci
