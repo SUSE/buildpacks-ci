@@ -1,0 +1,123 @@
+---
+<% buildpacks= ["ruby", "go", "python"] %>
+
+resource_types:
+  - name: email
+    type: docker-image
+    source:
+      repository: pcfseceng/email-resource
+resources:
+- name: ci
+  type: git
+  source:
+    uri: git@github.com:SUSE/buildpacks-ci.git
+    private_key: {{github-private-key}}
+- name: cf-obs-binary-builder
+  type: git
+  source:
+    uri: git@github.com:SUSE/cf-obs-binary-builder.git
+    private_key: {{github-private-key}}
+- name: depwatcher
+  type: git
+  source:
+    uri: https://github.com/cloudfoundry/buildpacks-ci.git
+<% buildpacks.each do |buildpack| %>
+- name: <%= buildpack %>-buildpack-gh-release
+  type: github-release
+  source:
+    owner: cloudfoundry
+    repository: <%= buildpack %>-buildpack
+    access_token: {{github-access-token}}
+<% end %>
+- name: email.suse
+  type: email
+  source:
+    smtp:
+      anonymous: true
+      host: {{notification-imap-host}}
+      port: {{notification-imap-port}}
+      ca_cert: {{notification-ca-cert}}
+    from: {{notification-from}}
+    to:
+      - {{notification-to}}
+jobs:
+<% buildpacks.each do |buildpack| %>
+- name: add-missing-<%= buildpack %>-dependencies
+  plan:
+  - get: <%= buildpack %>-buildpack-gh-release
+    trigger: true
+  - get : ci
+  - get: cf-obs-binary-builder
+  - get: depwatcher
+  - task: add-missing-dependencies
+    input_mapping: { buildpack-gh-release: <%= buildpack %>-buildpack-gh-release }
+    params:
+      OBS_DEPENDENCY_PROJECT: {{obs-buildpack-dependencies-staging-project}}
+      BUILDPACK: <%= buildpack %>
+      OBS_USERNAME:  {{obs-username}}
+      OBS_PASSWORD:  {{obs-password}}
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/binary_builder_obs_opensuse
+      inputs:
+        - name: ci
+        - name: cf-obs-binary-builder
+        - name: depwatcher
+        - name: buildpack-gh-release
+      outputs:
+      - name: out
+      run:
+        path: ci/buildpacks/tasks/add-missing-dependencies.sh
+    on_failure:
+      do:
+      - put: email.suse
+        params:
+          subject: out/failure_email_notification_subject
+          body: out/failure_email_notification_body
+- name: create-<%= buildpack %>-buildpack-on-obs
+  plan:
+  - get: <%= buildpack %>-buildpack-gh-release
+    passed:
+      - add-missing-<%= buildpack %>-dependencies
+    trigger: true
+  - get: ci
+    passed:
+      - add-missing-<%= buildpack %>-dependencies
+  - get: cf-obs-binary-builder
+    passed:
+      - add-missing-<%= buildpack %>-dependencies
+  - task: create-on-obs
+    input_mapping: { buildpack-gh-release: <%= buildpack %>-buildpack-gh-release }
+    params:
+      OBS_DEPENDENCY_PROJECT: {{obs-buildpack-dependencies-staging-project}}
+      OBS_BUILDPACK_PROJECT: {{obs-buildpacks-staging-project}}
+      BUILDPACK: <%= buildpack %>
+      OBS_USERNAME:  {{obs-username}}
+      OBS_PASSWORD:  {{obs-password}}
+      WAITING_TIME_SECS: 60
+      NUMBER_OF_RETRIES: 50
+      CACHE_SOURCES: true
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/binary_builder_obs_opensuse
+      inputs:
+        - name: ci
+        - name: cf-obs-binary-builder
+        - name: buildpack-gh-release
+      outputs:
+      - name: out
+      run:
+        path: ci/buildpacks/tasks/create-buildpack-on-obs.sh
+    on_failure:
+      do:
+      - put: email.suse
+        params:
+          subject: out/failure_email_notification_subject
+          body: out/failure_email_notification_body
+<% end %>
