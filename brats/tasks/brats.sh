@@ -7,18 +7,6 @@ VERSION=$(ls *.src.rpm | sed -E 's/.*buildpack-([0-9.].+)-.*/\1/')
 BUILDPACK=$(ls *.src.rpm | sed -E 's/(.*buildpack-[0-9.].+)-.*/\1/')
 popd > /dev/null
 
-if ls s3-buildpacks/*buildpack-v${VERSION}-*.zip > /dev/null 2>&1; then
-  echo -e "The buildpack with the version $VERSION was already released, exiting ..."
-cat << EOF > mail-output/subject-failed.txt
-${BUILDPACK} has not been build (already released) 
-EOF
-cat << EOF > mail-output/body-failed.txt
-${BUILDPACK} has not been build (already released) 
-See concourse for details.
-EOF
-  exit 1
-fi
-
 source ci/tasks/cf_login.sh
 
 rm buildpack/manifest.yml buildpack/VERSION

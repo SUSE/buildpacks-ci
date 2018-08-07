@@ -63,7 +63,39 @@ resources:
     access_key_id: {{aws-access-key}}
     secret_access_key: {{aws-secret-key}}
     region_name: us-east-1
+- name: s3.ruby-brats
+  type: s3
+  source:
+    bucket: brats-status
+    versioned_file: brats.ruby
+    access_key_id: {{aws-access-key}}
+    secret_access_key: {{aws-secret-key}}
+    region_name: us-east-1
 jobs:
+- name: test-ruby-version-again
+  plan:
+  - get: ci
+  - get: s3.ruby-brats
+  - task: test-ruby-version-again
+    input_mapping:
+      s3.brats: s3.ruby-brats
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/concourse-brats
+      inputs:
+        - name: ci
+        - name: s3.brats
+      outputs:
+        - name: output
+      run:
+        path: touch
+        args:
+          - 'output/version'
+  - put: s3.ruby-brats
+    params: {file: output/version}
 - name: ruby-brats
   serial: true
   plan:
@@ -71,7 +103,25 @@ jobs:
     trigger: true
   - get: ci
   - get: ruby-buildpack
-  - get: s3-buildpacks
+  - get: s3.ruby-brats
+    trigger: true
+  - task: is-not-tested
+    input_mapping:
+      s3.brats: s3.ruby-brats
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/concourse-brats
+      inputs:
+        - name: ci
+        - name: lftp.obs-buildpacks-staging-ruby
+        - name: s3.brats
+      outputs:
+        - name: output
+      run:
+        path: ci/tasks/check-if-tested.sh
   - task: cleanup
     config:
       platform: linux
@@ -101,7 +151,6 @@ jobs:
       inputs:
         - name: buildpack
         - name: lftp.obs-buildpacks-staging-ruby
-        - name: s3-buildpacks
         - name: ci
       outputs:
         - name: brats-ouput
@@ -122,6 +171,9 @@ jobs:
         PROJECT: {{obs-buildpacks-staging-project}}
       run:
         path: ci/brats/tasks/brats.sh
+    on_success:
+      put: s3.ruby-brats
+      params: {file: output/version}
     on_failure: 
       put: email.suse
       params:
