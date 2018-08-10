@@ -94,6 +94,7 @@ jobs:
     params:
       OBS_DEPENDENCY_PROJECT: {{obs-buildpack-dependencies-staging-project}}
       OBS_BUILDPACK_PROJECT: {{obs-buildpacks-staging-project}}
+      STAGING_BUILDPACKS_BUCKET: {{s3-staging-buildpacks-bucket}}
       BUILDPACK: <%= buildpack %>
       OBS_USERNAME:  {{obs-username}}
       OBS_PASSWORD:  {{obs-password}}
