@@ -2,30 +2,23 @@
 
 set -e
 
-pushd lftp.obs-buildpacks-staging-* > /dev/null
-VERSION=$(ls *.src.rpm | sed -E 's/.*buildpack-([0-9.].+)-.*/\1/')
-BUILDPACK=$(ls *.src.rpm | sed -E 's/(.*buildpack-[0-9.].+)-.*/\1/')
-popd > /dev/null
+source ci/brats/tasks/cf_login.sh
 
-source ci/tasks/cf_login.sh
+# make sure that we do not test the git version but the buildpack one
+rm git.buildpack/manifest.yml git.buildpack/VERSION
 
-rm buildpack/manifest.yml buildpack/VERSION
-
-cd lftp.obs-buildpacks-staging-*
-
-rpm2cpio *.src.rpm | cpio -idmv
-tar xf v*.tar.gz
-cp *-buildpack-*/manifest.yml *-buildpack-*/VERSION ../buildpack/
-cd ../buildpack
+cd git.buildpack
+unzip s3.suse-buildbacks-staging-*/*.zip manifest.yml VERSION
 
 scripts/brats.sh
 
 if [ $? -ne 0 ]; then
 cat << EOF > mail-output/subject-failed.txt
-${BUILDPACK} has not been build (BRATS have failed) 
+[CI] ${BUILDPACK} BRATs have failed
 EOF
 cat << EOF > mail-output/body-failed.txt
-${BUILDPACK} has not been build (BRATS have failed) 
-See concourse for details.
+The ${BUILDPACK} BRATs have failed for the following buildpack: $(cat ../s3.suse-buildbacks-staging-*/url)
+
+See concourse for more details.
 EOF
 fi

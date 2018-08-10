@@ -4,11 +4,6 @@ resource_types:
   type: docker-image
   source:
     repository: pcfseceng/email-resource
-- name: lftp-resource
-  type: docker-image
-  source:
-    repository: machinerytool/concourse-lftp-resource
-    tag: latest
 
 resources:
 - name: email.suse
@@ -22,106 +17,37 @@ resources:
         ((notification-ca-cert))
     from: {{notification-from}}
     to: [ {{notification-to}} ]
-  check_every: 60m
-- name: lftp.obs-buildpacks-staging-ruby
-  type: lftp-resource
-  source:
-    url: https://download.opensuse.org/repositories/Cloud:/Platform:/buildpacks:/staging/buildpacks/src/
-    regexp: ruby-buildpack-(.*).src.rpm
-- name: lftp.obs-buildpacks-staging-go
-  type: lftp-resource
-  source:
-    url: https://download.opensuse.org/repositories/Cloud:/Platform:/buildpacks:/staging/buildpacks/src/
-    regexp: go-buildpack-(.*).src.rpm
 - name: ci
   type: git
   source:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
-    branch: add-go-brats
-- name: ruby-buildpack
+    branch: setup-release-process
+- name: git.ruby-buildpack
   type: git
   source:
     uri: git@github.com:SUSE/cf-ruby-buildpack.git
-    private_key: {{github-private-key}}
-- name: go-buildpack
-  type: git
-  source:
-    uri: git@github.com:SUSE/cf-go-buildpack.git
     private_key: {{github-private-key}}
 - name: git.ruby_buildpack-release
   type: git
   source:
     uri: git@github.com:SUSE/cf-ruby-buildpack-release.git
     private_key: {{github-private-key}}
-    branch: master
-- name: s3-buildpacks
+- name: s3.suse-buildpacks-staging-ruby
   type: s3
   source:
-    bucket: cf-opensusefs2
-    regexp: ruby_buildpack-(.*).zip
+    bucket: suse-buildpacks-staging
+    regexp: ruby_buildpack-v([0-9-.]+)-.+\.zip
     access_key_id: {{aws-access-key}}
     secret_access_key: {{aws-secret-key}}
-    region_name: us-east-1
-- name: s3.ruby-brats
-  type: s3
-  source:
-    bucket: brats-status
-    versioned_file: brats.ruby
-    access_key_id: {{aws-access-key}}
-    secret_access_key: {{aws-secret-key}}
-    region_name: us-east-1
 jobs:
-- name: test-ruby-version-again
-  plan:
-  - get: ci
-  - get: s3.ruby-brats
-  - task: test-ruby-version-again
-    input_mapping:
-      s3.brats: s3.ruby-brats
-    config:
-      platform: linux
-      image_resource:
-        type: docker-image
-        source:
-          repository: splatform/concourse-brats
-      inputs:
-        - name: ci
-        - name: s3.brats
-      outputs:
-        - name: output
-      run:
-        path: touch
-        args:
-          - 'output/version'
-  - put: s3.ruby-brats
-    params: {file: output/version}
 - name: ruby-brats
   serial: true
   plan:
-  - get: lftp.obs-buildpacks-staging-ruby
+  - get: s3.suse-buildpacks-staging-ruby
     trigger: true
   - get: ci
-  - get: ruby-buildpack
-  - get: s3.ruby-brats
-    trigger: true
-  - task: is-not-tested
-    input_mapping:
-      s3.brats: s3.ruby-brats
-    config:
-      platform: linux
-      image_resource:
-        type: docker-image
-        source:
-          repository: splatform/concourse-brats
-      inputs:
-        - name: ci
-        - name: lftp.obs-buildpacks-staging-ruby
-        - name: s3.brats
-      outputs:
-        - name: output
-      run:
-        path: ci/tasks/check-if-tested.sh
+  - get: git.ruby-buildpack
   - task: cleanup
     config:
       platform: linux
@@ -141,7 +67,8 @@ jobs:
         path: ci/brats/tasks/cleanup.sh
   - task: brats
     input_mapping:
-      buildpack: ruby-buildpack
+      git.buildpack: git.ruby-buildpack
+      s3.suse-buildpacks-staging: s3.suse-buildpacks-staging-ruby
     config:
       platform: linux
       image_resource:
@@ -149,8 +76,8 @@ jobs:
         source:
           repository: splatform/concourse-brats
       inputs:
-        - name: buildpack
-        - name: lftp.obs-buildpacks-staging-ruby
+        - name: git.buildpack
+        - name: s3.suse-buildpacks-staging
         - name: ci
       outputs:
         - name: brats-ouput
@@ -171,9 +98,6 @@ jobs:
         PROJECT: {{obs-buildpacks-staging-project}}
       run:
         path: ci/brats/tasks/brats.sh
-    on_success:
-      put: s3.ruby-brats
-      params: {file: output/version}
     on_failure: 
       put: email.suse
       params:
@@ -183,7 +107,7 @@ jobs:
   plan:
   - get: ci
   - get: git.ruby_buildpack-release
-  - get: lftp.obs-buildpacks-staging-ruby
+  - get: s3.suse-buildpacks-staging-ruby
     passed:
       - ruby-brats
     trigger: true
@@ -196,26 +120,19 @@ jobs:
           repository: splatform/binary_builder_obs_opensuse
       inputs:
         - name: ci
-        - name: lftp.obs-buildpacks-staging-ruby
+        - name: s3.suse-buildpacks-staging-ruby
         - name: git.ruby_buildpack-release
       outputs:
-        - name: s3-output
         - name: git-output
         - name: git-tag
         - name: mail-output
       params:
-        OBS_USERNAME:  {{obs-username}}
-        OBS_PASSWORD:  {{obs-password}}
         GIT_MAIL: {{github-username}}
         GIT_USER: suse-cf-ci-bot
         PROJECT: {{obs-buildpacks-staging-project}}
 
       run:
         path: ci/brats/tasks/release_buildpack.sh
-  - put: s3-buildpacks
-    params:
-      file: s3-output/*.zip
-      acl: public-read
   - put: git.ruby_buildpack-release
     params:
       repository: git-output
@@ -224,61 +141,3 @@ jobs:
     params:
       subject: mail-output/subject.txt
       body: mail-output/body.txt
-- name: go-brats
-  serial: true
-  plan:
-  - get: lftp.obs-buildpacks-staging-go
-    trigger: true
-  - get: ci
-  - get: go-buildpack
-  - get: s3-buildpacks
-  - task: cleanup
-    config:
-      platform: linux
-      image_resource:
-        type: docker-image
-        source:
-          repository: splatform/concourse-brats
-      inputs:
-        - name: ci
-      params:
-        CF_ENDPOINT: {{brats-cf-endpoint}}
-        CF_USERNAME: {{brats-cf-username}}
-        CF_PASSWORD: {{brats-cf-password}}
-        CF_ORG: {{brats-cf-org}}
-        CF_SPACE: {{brats-cf-space}}
-      run:
-        path: ci/tasks/cleanup.sh
-  - task: brats
-    input_mapping:
-      buildpack: go-buildpack
-    config:
-      platform: linux
-      image_resource:
-        type: docker-image
-        source:
-          repository: splatform/concourse-brats
-      inputs:
-        - name: buildpack
-        - name: lftp.obs-buildpacks-staging-go
-        - name: s3-buildpacks
-        - name: ci
-      outputs:
-        - name: brats-ouput
-        - name: mail-output
-      params:
-        GINKGO_NODES: 1
-        PROXY_SCHEME: {{brats-proxy-scheme}}
-        PROXY_PORT: {{brats-proxy-port}}
-        PROXY_USERNAME: {{brats-proxy-username}}
-        PROXY_PASSWORD: {{brats-proxy-password}}
-        PROXY_HOST: {{brats-proxy-host}}
-        CF_STACK: {{brats-cf-stack}}
-        CF_ENDPOINT: {{brats-cf-endpoint}}
-        CF_USERNAME: {{brats-cf-username}}
-        CF_PASSWORD: {{brats-cf-password}}
-        CF_ORG: {{brats-cf-org}}
-        CF_SPACE: {{brats-cf-space}}
-        PROJECT: {{obs-buildpacks-staging-project}}
-      run:
-        path: ci/tasks/brats.sh
