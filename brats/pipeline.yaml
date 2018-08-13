@@ -110,7 +110,6 @@ jobs:
   - get: s3.suse-buildpacks-staging-ruby
     passed:
       - ruby-brats
-    trigger: true
   - task: publish
     config:
       platform: linux
