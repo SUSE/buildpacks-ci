@@ -8,7 +8,7 @@ source ci/brats/tasks/cf_login.sh
 rm git.buildpack/manifest.yml git.buildpack/VERSION
 
 cd git.buildpack
-unzip s3.suse-buildbacks-staging/*.zip manifest.yml VERSION
+unzip ../s3.suse-buildpacks-staging/*.zip  manifest.yml VERSION
 
 scripts/brats.sh
 
