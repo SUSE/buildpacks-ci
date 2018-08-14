@@ -1,4 +1,6 @@
 ---
+<% buildpacks = ["ruby", "go"] %>
+
 resource_types:
 - name: email
   type: docker-image
@@ -23,31 +25,52 @@ resources:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
     branch: setup-release-process
-- name: git.ruby-buildpack
+    to: [ {{notification-to}} ]
+- name: git.scf
   type: git
   source:
-    uri: git@github.com:SUSE/cf-ruby-buildpack.git
+    uri: git@github.com:SUSE/scf.git
     private_key: {{github-private-key}}
-- name: git.cf-buildpack-releases
+    branch: develop
+<% buildpacks.each do |buildpack| %>
+- name: git.<%= buildpack %>-buildpack
+  type: git
+  source:
+    uri: git@github.com:SUSE/cf-<%= buildpack %>-buildpack.git
+    private_key: {{github-private-key}}
+- name: git.<%= buildpack %>-buildpack-release
+  type: git
+  source:
+    uri: git@github.com:SUSE/cf-<%= buildpack %>-buildpack-release.git
+    private_key: {{github-private-key}}
+- name: git.upstream-<%= buildpack %>-buildpack
+  type: git
+  source:
+    uri: git@github.com:cloudfoundry/<%= buildpack %>-buildpack.git
+    private_key: {{github-private-key}}
+- name: git.cf-buildpack-releases-<%= buildpack %>
   type: git
   source:
     uri: git@github.com:SUSE/cf-buildpack-releases.git
     private_key: {{github-private-key}}
-- name: s3.suse-buildpacks-staging-ruby
+    paths: <%= buildpack %>/*.yml
+- name: s3.suse-buildpacks-staging-<%= buildpack %>
   type: s3
   source:
     bucket: suse-buildpacks-staging
-    regexp: ruby_buildpack-v([0-9-.]+)-.+\.zip
+    regexp: <%= buildpack %>_buildpack-pre-v([0-9-.]+)-.+\.zip
     access_key_id: {{aws-access-key}}
     secret_access_key: {{aws-secret-key}}
+<% end %>
 jobs:
-- name: ruby-brats
+<% buildpacks.each do |buildpack| %>
+- name: <%= buildpack %>-brats
   serial: true
   plan:
-  - get: s3.suse-buildpacks-staging-ruby
+  - get: s3.suse-buildpacks-staging-<%= buildpack %>
     trigger: true
   - get: ci
-  - get: git.ruby-buildpack
+  - get: git.<%= buildpack %>-buildpack
   - task: cleanup
     config:
       platform: linux
@@ -67,8 +90,8 @@ jobs:
         path: ci/brats/tasks/cleanup.sh
   - task: brats
     input_mapping:
-      git.buildpack: git.ruby-buildpack
-      s3.suse-buildpacks-staging: s3.suse-buildpacks-staging-ruby
+      git.buildpack: git.<%= buildpack %>-buildpack
+      s3.suse-buildpacks-staging: s3.suse-buildpacks-staging-<%= buildpack %>
     config:
       platform: linux
       image_resource:
@@ -98,27 +121,20 @@ jobs:
         PROJECT: {{obs-buildpacks-staging-project}}
       run:
         path: ci/brats/tasks/brats.sh
-    on_failure: 
+    on_failure:
       put: email.suse
       params:
         subject: mail-output/subject-failed.txt
         body: mail-output/body-failed.txt
-- name: ruby-qa
-  plan:
-  - get: ci
-  - get: git.cf-buildpack-releases
-  - get: s3.suse-buildpacks-staging-ruby
-    trigger: true
-    passed:
-      - ruby-brats
-  - task: create-pr
+  - task: prepare-release-trigger
     input_mapping:
-      s3.suse-buildpacks-staging: s3.suse-buildpacks-staging-ruby
+      s3.suse-buildpacks-staging: s3.suse-buildpacks-staging-<%= buildpack %>
+      git.cf-buildpack-releases: git.cf-buildpack-releases-<%= buildpack %>
     config:
       platform: linux
       image_resource:
         type: docker-image
-        source: 
+        source:
           repository: splatform/concourse-brats
       inputs:
         - name: ci
@@ -127,7 +143,7 @@ jobs:
       outputs:
         - name: mail-output
       params:
-        BUILDPACK: ruby
+        BUILDPACK: <%= buildpack %>
         GITHUB_TOKEN: ((github-access-token))
         GITHUB_PRIVATE_KEY: |
           {{github-private-key}}
@@ -135,7 +151,41 @@ jobs:
         GIT_USER: suse-cf-ci-bot
       run:
         path: ci/brats/tasks/create-qa-pr.sh
-  - put: email.suse
-    params:
-      subject: mail-output/subject.txt
-      body: mail-output/body.txt
+- name: prepare-<%= buildpack %>-release
+  plan:
+  - get: ci
+    passed:
+    - <%= buildpack %>-brats
+  - get: git.cf-buildpack-releases-<%= buildpack %>
+    trigger: true
+  - get: git.upstream-<%= buildpack %>-buildpack
+  - get: git.<%= buildpack %>-buildpack-release
+  - get: git.scf
+  - task: prepare-release
+    input_mapping:
+      git.cf-buildpack-releases: git.cf-buildpack-releases-<%= buildpack %>
+      git.upstream-buildpack: git.upstream-<%= buildpack %>-buildpack
+      git.buildpack-release: git.<%= buildpack %>-buildpack-release
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/concourse-brats
+      inputs:
+        - name: ci
+        - name: git.cf-buildpack-releases
+        - name: git.upstream-buildpack
+        - name: git.scf
+      params:
+        BUILDPACK: <%= buildpack %>
+        GITHUB_TOKEN: ((github-access-token))
+        GITHUB_PRIVATE_KEY: |
+          {{github-private-key}}
+        GIT_MAIL: {{github-username}}
+        GIT_USER: suse-cf-ci-bot
+        STAGING_BUCKET_NAME: suse-buildpacks-staging
+        PRODUCTION_BUCKET_NAME: suse-buildpacks
+      run:
+        path: ci/brats/tasks/prepare-release.sh
+<% end %>
