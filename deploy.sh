@@ -7,7 +7,7 @@ common() {
 }
 
 brats() {
-  common brats buildpacks-brats
+  common brats buildpacks-test-and-release
 }
 
 buildpacks() {
