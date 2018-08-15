@@ -25,7 +25,7 @@ unzip staging-buildpack.zip manifest.yml
 
 shasum=`sha1sum staging-buildpack.zip`
 checksum=${shasum:0:8}
-if [[ $original_buildpack_url =~ ${checksum}\.zip ]]; then
+if [[ ! $original_buildpack_url =~ ${checksum}\.zip ]]; then
   echo "Validation of downloaded buildpack checksum failed."
   exit 1
 fi
