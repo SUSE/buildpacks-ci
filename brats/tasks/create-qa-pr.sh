@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -ex
+
 export FILENAME=$(basename $(ls s3.suse-buildpacks-staging/*.zip))
 export GIT_BRANCH_NAME="trigger_${FILENAME}_release"
 # Get rid of quotes in the beginning and end
