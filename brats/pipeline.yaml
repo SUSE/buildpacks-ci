@@ -1,6 +1,5 @@
 ---
 <% buildpacks = ["ruby", "go"] %>
-
 resource_types:
 - name: email
   type: docker-image
@@ -65,7 +64,7 @@ resources:
   type: s3
   source:
     bucket: suse-buildpacks-staging
-    regexp: <%= buildpack %>_buildpack-pre-v([0-9-.]+)-.+\.zip
+    regexp: <%= buildpack %>_buildpack-v([0-9-.]+)-pre-[0-9a-f]{8}\.zip
     access_key_id: {{aws-access-key}}
     secret_access_key: {{aws-secret-key}}
 <% end %>
