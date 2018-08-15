@@ -3,7 +3,7 @@
 set -xe
 
 # Get staging buildpack
-file=`ls git.cf-buildpack-releases/*/*.json | tail -n1`
+file=`ls git.cf-buildpack-releases/${BUILDPACK}/*.json | tail -n1`
 original_buildpack_url=`jq -r .url ${file}`
 original_filename=$(basename ${original_buildpack_url})
 wget $original_buildpack_url -O staging-buildpack.zip
