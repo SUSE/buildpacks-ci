@@ -67,6 +67,14 @@ resources:
     regexp: <%= buildpack %>_buildpack-v([0-9-.]+)-pre-[0-9a-f]{8}\.zip
     access_key_id: {{aws-access-key}}
     secret_access_key: {{aws-secret-key}}
+    private_key: {{github-private-key}}
+- name: s3.suse-buildpacks-<%= buildpack %>
+  type: s3
+  source:
+    bucket: suse-buildpacks
+    regexp: <%= buildpack %>_buildpack-v([0-9-.]+)-[0-9a-f]{8}\.zip
+    access_key_id: {{aws-access-key}}
+    secret_access_key: {{aws-secret-key}}
 <% end %>
 jobs:
 <% buildpacks.each do |buildpack| %>
@@ -168,7 +176,7 @@ jobs:
         GIT_USER: suse-cf-ci-bot
       run:
         path: ci/brats/tasks/create-qa-pr.sh
-- name: prepare-<%= buildpack %>-release
+- name: prepare-<%= buildpack %>-buildpack
   plan:
   - get: ci
     passed:
@@ -176,13 +184,10 @@ jobs:
   - get: git.cf-buildpack-releases-<%= buildpack %>-readonly
     trigger: true
   - get: git.upstream-<%= buildpack %>-buildpack
-  - get: git.<%= buildpack %>-buildpack-release
-  - get: git.scf
   - task: prepare-release
     input_mapping:
       git.cf-buildpack-releases: git.cf-buildpack-releases-<%= buildpack %>-readonly
       git.upstream-buildpack: git.upstream-<%= buildpack %>-buildpack
-      git.buildpack-release: git.<%= buildpack %>-buildpack-release
     config:
       platform: linux
       image_resource:
@@ -193,14 +198,10 @@ jobs:
         - name: ci
         - name: git.cf-buildpack-releases
         - name: git.upstream-buildpack
-        - name: git.scf
+      outputs:
+        - name: s3-out
       params:
         BUILDPACK: <%= buildpack %>
-        GITHUB_TOKEN: ((github-access-token))
-        GITHUB_PRIVATE_KEY: |
-          {{github-private-key}}
-        GIT_MAIL: {{github-username}}
-        GIT_USER: suse-cf-ci-bot
         STAGING_BUCKET_NAME: suse-buildpacks-staging
         PRODUCTION_BUCKET_NAME: suse-buildpacks
         AWS_ACCESS_KEY_ID: {{aws-access-key}}
@@ -208,4 +209,40 @@ jobs:
         AWS_DEFAULT_REGION: us-east-1
       run:
         path: ci/brats/tasks/prepare-release.sh
+  - put: s3.suse-buildpacks-<%= buildpack %>
+    params:
+      file: s3-out/*.zip
+- name: prepare-<%= buildpack %>-buildpack-release
+  plan:
+  - get: ci
+#    passed:
+#    - prepare-<%= buildpack %>-buildpack
+  - get: git.<%= buildpack %>-buildpack-release
+  - get: git.scf
+  - get: s3.suse-buildpacks-<%= buildpack %>
+    trigger: true
+  - task: prepare-release
+    input_mapping:
+      git.buildpack-release: git.<%= buildpack %>-buildpack-release
+      s3.suse-buildpacks: s3.suse-buildpacks-<%= buildpack %>
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/concourse-brats
+      inputs:
+        - name: ci
+        - name: git.scf
+        - name: git.buildpack-release
+        - name: s3.suse-buildpacks
+      params:
+        BUILDPACK: <%= buildpack %>
+        GITHUB_TOKEN: ((github-access-token))
+        GITHUB_PRIVATE_KEY: |
+          {{github-private-key}}
+        GIT_MAIL: {{github-username}}
+        GIT_USER: suse-cf-ci-bot
+      run:
+        path: ci/brats/tasks/create-release-pr.sh
 <% end %>
