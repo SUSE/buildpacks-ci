@@ -2,6 +2,11 @@
 
 set -xe
 
+if [ ! -f git.cf-buildpack-releases/${BUILDPACK}/*.json ]; then
+  echo "There is no ${BUILDPACK} json file yet. Exiting ..."
+  exit 1
+fi
+
 # Get staging buildpack
 file=`ls git.cf-buildpack-releases/${BUILDPACK}/*.json | tail -n1`
 original_buildpack_url=`jq -r .url ${file}`
