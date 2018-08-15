@@ -33,11 +33,11 @@ ${BUILDPACK}-buildpack/${filename}:
   object_id: ${filename}
   sha: ${checksum}
 EOF
-git commit config/blobs.yml -m "Bump to ${filename}"
+commit_message="Bump to ${filename}"
+git commit config/blobs.yml -m "${commit_message}"
 git push origin
 
 commit_id=`git rev-parse HEAD`
-commit_message=`git log --format=%b -n 1`
 popd
 
 
