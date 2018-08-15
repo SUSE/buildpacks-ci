@@ -1,14 +1,10 @@
 ---
+<% buildpacks = ["ruby", "go"] %>
 resource_types:
 - name: email
   type: docker-image
   source:
     repository: pcfseceng/email-resource
-- name: lftp-resource
-  type: docker-image
-  source:
-    repository: machinerytool/concourse-lftp-resource
-    tag: latest
 
 resources:
 - name: email.suse
@@ -22,45 +18,73 @@ resources:
         ((notification-ca-cert))
     from: {{notification-from}}
     to: [ {{notification-to}} ]
-  check_every: 60m
-- name: lftp.obs-buildpacks-staging
-  type: lftp-resource
-  source:
-    url: https://download.opensuse.org/repositories/Cloud:/Platform:/buildpacks:/staging/buildpacks/src/
-    regexp: ruby-buildpack-(.*).src.rpm
 - name: ci
   type: git
   source:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
-- name: ruby-buildpack
+    branch: setup-release-process
+    to: [ {{notification-to}} ]
+- name: git.scf
   type: git
   source:
-    uri: git@github.com:SUSE/cf-ruby-buildpack.git
+    uri: git@github.com:SUSE/scf.git
     private_key: {{github-private-key}}
-- name: git.ruby_buildpack-release
+    branch: develop
+<% buildpacks.each do |buildpack| %>
+- name: git.<%= buildpack %>-buildpack
   type: git
   source:
-    uri: git@github.com:SUSE/cf-ruby-buildpack-release.git
+    uri: git@github.com:SUSE/cf-<%= buildpack %>-buildpack.git
     private_key: {{github-private-key}}
-    branch: master
-- name: s3-buildpacks
+- name: git.<%= buildpack %>-buildpack-release
+  type: git
+  source:
+    uri: git@github.com:SUSE/cf-<%= buildpack %>-buildpack-release.git
+    private_key: {{github-private-key}}
+- name: git.upstream-<%= buildpack %>-buildpack
+  type: git
+  source:
+    uri: git@github.com:cloudfoundry/<%= buildpack %>-buildpack.git
+    private_key: {{github-private-key}}
+- name: git.cf-buildpack-releases-<%= buildpack %>-readonly
+  type: git
+  source:
+    uri: git@github.com:SUSE/cf-buildpack-releases.git
+    private_key: {{github-private-key}}
+    paths:
+    - <%= buildpack %>/*.json
+    private_key: {{github-private-key}}
+- name: git.cf-buildpack-releases-<%= buildpack %>
+  type: git
+  source:
+    uri: git@github.com:SUSE/cf-buildpack-releases.git
+    private_key: {{github-private-key}}
+- name: s3.suse-buildpacks-staging-<%= buildpack %>
   type: s3
   source:
-    bucket: cf-opensusefs2
-    regexp: ruby_buildpack-(.*).zip
+    bucket: suse-buildpacks-staging
+    regexp: <%= buildpack %>_buildpack-v([0-9-.]+)-pre-[0-9a-f]{8}\.zip
     access_key_id: {{aws-access-key}}
     secret_access_key: {{aws-secret-key}}
-    region_name: us-east-1
+    private_key: {{github-private-key}}
+- name: s3.suse-buildpacks-<%= buildpack %>
+  type: s3
+  source:
+    bucket: suse-buildpacks
+    regexp: <%= buildpack %>_buildpack-v([0-9-.]+)-[0-9a-f]{8}\.zip
+    access_key_id: {{aws-access-key}}
+    secret_access_key: {{aws-secret-key}}
+<% end %>
 jobs:
-- name: brats
-  serial: true
+<% buildpacks.each do |buildpack| %>
+- name: run-<%= buildpack %>-brats
+  serial_groups: [brats]
   plan:
-  - get: lftp.obs-buildpacks-staging
+  - get: s3.suse-buildpacks-staging-<%= buildpack %>
     trigger: true
   - get: ci
-  - get: ruby-buildpack
-  - get: s3-buildpacks
+  - get: git.<%= buildpack %>-buildpack
   - task: cleanup
     config:
       platform: linux
@@ -79,6 +103,9 @@ jobs:
       run:
         path: ci/brats/tasks/cleanup.sh
   - task: brats
+    input_mapping:
+      git.buildpack: git.<%= buildpack %>-buildpack
+      s3.suse-buildpacks-staging: s3.suse-buildpacks-staging-<%= buildpack %>
     config:
       platform: linux
       image_resource:
@@ -86,9 +113,8 @@ jobs:
         source:
           repository: splatform/concourse-brats
       inputs:
-        - name: ruby-buildpack
-        - name: lftp.obs-buildpacks-staging
-        - name: s3-buildpacks
+        - name: git.buildpack
+        - name: s3.suse-buildpacks-staging
         - name: ci
       outputs:
         - name: brats-ouput
@@ -109,53 +135,116 @@ jobs:
         PROJECT: {{obs-buildpacks-staging-project}}
       run:
         path: ci/brats/tasks/brats.sh
-    on_failure: 
+    on_failure:
       put: email.suse
       params:
         subject: mail-output/subject-failed.txt
         body: mail-output/body-failed.txt
-- name: release
+- name: setup-manual-<%= buildpack %>-release-trigger
   plan:
-  - get: ci
-  - get: git.ruby_buildpack-release
-  - get: lftp.obs-buildpacks-staging
-    passed:
-      - brats
+  - get: s3.suse-buildpacks-staging-<%= buildpack %>
     trigger: true
-  - task: publish
+    passed:
+    - run-<%= buildpack %>-brats
+  - get: ci
+    passed:
+    - run-<%= buildpack %>-brats
+  - get: git.<%= buildpack %>-buildpack
+  - get: git.cf-buildpack-releases-<%= buildpack %>
+  - task: prepare-trigger
+    input_mapping:
+      s3.suse-buildpacks-staging: s3.suse-buildpacks-staging-<%= buildpack %>
+      git.cf-buildpack-releases: git.cf-buildpack-releases-<%= buildpack %>
     config:
       platform: linux
       image_resource:
         type: docker-image
-        source: 
-          repository: splatform/binary_builder_obs_opensuse
+        source:
+          repository: splatform/concourse-brats
       inputs:
         - name: ci
-        - name: lftp.obs-buildpacks-staging
-        - name: git.ruby_buildpack-release
+        - name: s3.suse-buildpacks-staging
+        - name: git.cf-buildpack-releases
       outputs:
-        - name: s3-output
-        - name: git-output
-        - name: git-tag
         - name: mail-output
       params:
-        OBS_USERNAME:  {{obs-username}}
-        OBS_PASSWORD:  {{obs-password}}
+        BUILDPACK: <%= buildpack %>
+        GITHUB_TOKEN: ((github-access-token))
+        GITHUB_PRIVATE_KEY: |
+          {{github-private-key}}
         GIT_MAIL: {{github-username}}
         GIT_USER: suse-cf-ci-bot
-        PROJECT: {{obs-buildpacks-staging-project}}
-
       run:
-        path: ci/brats/tasks/release_buildpack.sh
-  - put: s3-buildpacks
+        path: ci/brats/tasks/create-qa-pr.sh
+- name: create-final-<%= buildpack %>-buildpack
+  plan:
+  - get: ci
+    passed:
+    - setup-manual-<%= buildpack %>-release-trigger
+  - get: git.cf-buildpack-releases-<%= buildpack %>-readonly
+    trigger: true
+  - get: git.upstream-<%= buildpack %>-buildpack
+  - task: prepare-release
+    input_mapping:
+      git.cf-buildpack-releases: git.cf-buildpack-releases-<%= buildpack %>-readonly
+      git.upstream-buildpack: git.upstream-<%= buildpack %>-buildpack
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/concourse-brats
+      inputs:
+        - name: ci
+        - name: git.cf-buildpack-releases
+        - name: git.upstream-buildpack
+      outputs:
+        - name: s3-out
+      params:
+        BUILDPACK: <%= buildpack %>
+        STAGING_BUCKET_NAME: suse-buildpacks-staging
+        PRODUCTION_BUCKET_NAME: suse-buildpacks
+        AWS_ACCESS_KEY_ID: {{aws-access-key}}
+        AWS_SECRET_ACCESS_KEY: {{aws-secret-key}}
+        AWS_DEFAULT_REGION: us-east-1
+      run:
+        path: ci/brats/tasks/prepare-release.sh
+  - put: s3.suse-buildpacks-<%= buildpack %>
     params:
-      file: s3-output/*.zip
-      acl: public-read
-  - put: git.ruby_buildpack-release
-    params:
-      repository: git-output
-      tag: git-tag/tag
-  - put: email.suse
-    params:
-      subject: mail-output/subject.txt
-      body: mail-output/body.txt
+      file: s3-out/*.zip
+- name: submit-<%= buildpack %>-buildpack-to-scf
+  plan:
+  - get: ci
+    passed:
+    - create-final-<%= buildpack %>-buildpack
+  - get: git.<%= buildpack %>-buildpack-release
+  - get: git.scf
+  - get: s3.suse-buildpacks-<%= buildpack %>
+    trigger: true
+    passed:
+    - create-final-<%= buildpack %>-buildpack
+  - task: prepare-release
+    input_mapping:
+      git.buildpack-release: git.<%= buildpack %>-buildpack-release
+      s3.suse-buildpacks: s3.suse-buildpacks-<%= buildpack %>
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/concourse-brats
+      inputs:
+        - name: ci
+        - name: git.scf
+        - name: git.buildpack-release
+        - name: s3.suse-buildpacks
+      params:
+        BUILDPACK: <%= buildpack %>
+        GITHUB_TOKEN: ((github-access-token))
+        GITHUB_PRIVATE_KEY: |
+          {{github-private-key}}
+        GIT_MAIL: {{github-username}}
+        GIT_USER: suse-cf-ci-bot
+      run:
+        path: ci/brats/tasks/create-release-pr.sh
+<% end %>
