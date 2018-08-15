@@ -18,13 +18,14 @@ git config --global user.email "${GIT_MAIL}"
 git config --global user.name "${GIT_USER}"
 
 # Update the bosh release repo
-filename=$(basename $(ls s3.suse-buildpacks/*.zip))
+pushd s3.suse-buildpacks
+filename=$(ls *.zip)
 filesize=$(du -b ${filename} | awk '{print $1}')
 checksum=$(sha1sum ${filename} | cut -d' ' -f1)
-
+popd
 
 pushd git.buildpack-release
-
+git checkout master
 cat << EOF > config/blobs.yml
 ---
 ${BUILDPACK}-buildpack/${filename}:
