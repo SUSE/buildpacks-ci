@@ -23,7 +23,6 @@ resources:
   source:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
-    branch: setup-release-process
     to: [ {{notification-to}} ]
 - name: git.scf
   type: git
