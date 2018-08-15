@@ -71,7 +71,7 @@ resources:
 jobs:
 <% buildpacks.each do |buildpack| %>
 - name: <%= buildpack %>-brats
-  serial: true
+  serial_groups: [brats]
   plan:
   - get: s3.suse-buildpacks-staging-<%= buildpack %>
     trigger: true
