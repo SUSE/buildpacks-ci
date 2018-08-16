@@ -101,6 +101,11 @@ jobs:
         CF_SPACE: {{brats-cf-space}}
       run:
         path: ci/brats/tasks/cleanup.sh
+    on_failure:
+      put: email.suse
+      params:
+        subject_text: "BRATS cleanup failed"
+        body_text: "There was a problem cleaning up the BRATS cluster. BRATS could not be run!"
   - task: run-brats
     input_mapping:
       git.buildpack: git.<%= buildpack %>-buildpack
@@ -116,7 +121,6 @@ jobs:
         - name: s3.suse-buildpacks-staging
         - name: ci
       outputs:
-        - name: brats-ouput
         - name: mail-output
       params:
         GINKGO_NODES: 1
