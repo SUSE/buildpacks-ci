@@ -12,6 +12,8 @@ rm manifest.yml VERSION
 
 unzip ../s3.suse-buildpacks-staging/*.zip  manifest.yml VERSION
 
+gc manifest.yml VERSION -m "Replace manifest and VERSION by the version to test"
+
 scripts/brats.sh
 
 if [ $? -ne 0 ]; then
