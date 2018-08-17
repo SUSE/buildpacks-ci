@@ -4,8 +4,11 @@ set -e
 
 source ci/brats/tasks/cf_login.sh
 
-# make sure that we do not test the git version but the buildpack one
+# Setup git
+git config --global user.email "${GIT_MAIL}"
+git config --global user.name "${GIT_USER}"
 
+# make sure that we do not test the git version but the buildpack one
 cd git.buildpack
 # Make sure the manifest and version file from git are not used
 rm manifest.yml VERSION
