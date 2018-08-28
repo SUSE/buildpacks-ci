@@ -123,7 +123,9 @@ jobs:
       outputs:
         - name: mail-output
       params:
+      <% if buildpack == "ruby" %>
         GINKGO_NODES: 1
+      <% end %>
         PROXY_SCHEME: {{brats-proxy-scheme}}
         PROXY_PORT: {{brats-proxy-port}}
         PROXY_USERNAME: {{brats-proxy-username}}
@@ -196,7 +198,7 @@ jobs:
     config:
       platform: linux
       image_resource:
-        type: docker-image
+        type: docker-image(3) Run all BRATs on Azure cluster
         source:
           repository: splatform/concourse-brats
       inputs:
