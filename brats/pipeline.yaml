@@ -198,7 +198,7 @@ jobs:
     config:
       platform: linux
       image_resource:
-        type: docker-image(3) Run all BRATs on Azure cluster
+        type: docker-image
         source:
           repository: splatform/concourse-brats
       inputs:
