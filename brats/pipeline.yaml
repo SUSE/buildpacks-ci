@@ -70,7 +70,7 @@ resources:
 - name: s3.suse-buildpacks-<%= buildpack %>
   type: s3
   source:
-    bucket: suse-buildpacks
+    bucket: cf-buildpacks.suse.com
     regexp: <%= buildpack %>_buildpack-v([0-9-.]+)-[0-9a-f]{8}\.zip
     access_key_id: {{aws-access-key}}
     secret_access_key: {{aws-secret-key}}
@@ -207,7 +207,7 @@ jobs:
       params:
         BUILDPACK: <%= buildpack %>
         STAGING_BUCKET_NAME: suse-buildpacks-staging
-        PRODUCTION_BUCKET_NAME: suse-buildpacks
+        PRODUCTION_BUCKET_NAME: cf-buildpacks.suse.com
         AWS_ACCESS_KEY_ID: {{aws-access-key}}
         AWS_SECRET_ACCESS_KEY: {{aws-secret-key}}
         AWS_DEFAULT_REGION: us-east-1
@@ -216,6 +216,7 @@ jobs:
   - put: s3.suse-buildpacks-<%= buildpack %>
     params:
       file: s3-out/*.zip
+      acl: public-read
 - name: submit-<%= buildpack %>-buildpack-to-scf
   plan:
   - get: ci
