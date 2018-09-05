@@ -123,9 +123,6 @@ jobs:
       outputs:
         - name: mail-output
       params:
-      <% if buildpack == "ruby" %>
-        GINKGO_NODES: 1
-      <% end %>
         PROXY_SCHEME: {{brats-proxy-scheme}}
         PROXY_PORT: {{brats-proxy-port}}
         PROXY_USERNAME: {{brats-proxy-username}}
