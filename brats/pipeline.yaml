@@ -208,6 +208,7 @@ jobs:
         BUILDPACK: <%= buildpack %>
         STAGING_BUCKET_NAME: suse-buildpacks-staging
         PRODUCTION_BUCKET_NAME: cf-buildpacks.suse.com
+        PRODUCTION_BUCKET_URL: "http://cf-buildpacks.suse.com"
         AWS_ACCESS_KEY_ID: {{aws-access-key}}
         AWS_SECRET_ACCESS_KEY: {{aws-secret-key}}
         AWS_DEFAULT_REGION: us-east-1
