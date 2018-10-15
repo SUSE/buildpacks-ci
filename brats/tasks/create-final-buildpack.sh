@@ -40,7 +40,7 @@ done
 
 
 # Rewrite manifest
-sed -i "s/${STAGING_BUCKET_NAME}/${PRODUCTION_BUCKET_NAME}/" manifest.yml
+sed -i "s|https://s3.amazonaws.com/${STAGING_BUCKET_NAME}|${PRODUCTION_BUCKET_URL}|" manifest.yml
 
 
 # Validate manifest
