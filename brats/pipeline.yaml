@@ -157,6 +157,38 @@ jobs:
     params:
       file: s3-out/*.zip
       acl: public-read
+- name: add-manifest-and-tag-<%= buildpack %>-buildpack
+  plan:
+  - get: s3.cf-buildpacks.suse.com-<%= buildpack %>
+    trigger: true
+    passed:
+    - create-final-<%= buildpack %>-buildpack
+  - get: ci
+  - get: git.cf-<%= buildpack %>-buildpack
+    passed:
+    - create-final-<%= buildpack %>-buildpack
+  - task: add-manifest-and-tag
+    input_mapping:
+      git.cf-buildpack: git.cf-<%= buildpack %>-buildpack
+      s3.cf-buildpacks.suse.com: s3.cf-buildpacks.suse.com-<%= buildpack %>
+    params:
+      GITHUB_PRIVATE_KEY: |
+        {{github-private-key}}
+      GIT_MAIL: {{github-username}}
+      GIT_USER: suse-cf-ci-bot
+      GITHUB_TOKEN: ((github-access-token))
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/concourse-brats
+      inputs:
+        - name: ci
+        - name: s3.cf-buildpacks.suse.com
+        - name: git.cf-buildpack
+      run:
+        path: ci/brats/tasks/add-manifest-and-tag.sh
 - name: update-<%= buildpack %>-buildpack-release
   plan:
   - get: ci
@@ -164,7 +196,7 @@ jobs:
   - get: s3.cf-buildpacks.suse.com-<%= buildpack %>
     trigger: true
     passed:
-    - create-final-<%= buildpack %>-buildpack
+    - add-manifest-and-tag-<%= buildpack %>-buildpack
   - task: trigger-final-releases-pipeline
     input_mapping:
       git.cf-buildpack-release: git.cf-<%= buildpack %>-buildpack-release
