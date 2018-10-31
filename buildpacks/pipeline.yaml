@@ -1,5 +1,5 @@
 ---
-<% buildpacks= ["ruby", "go", "python"] %>
+<% buildpacks= ["ruby", "go", "python", "php", "nodejs"] %>
 
 resource_types:
   - name: email
