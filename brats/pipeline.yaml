@@ -23,7 +23,6 @@ resources:
   source:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
-    to: [ {{notification-to}} ]
 <% buildpacks.each do |buildpack| %>
 - name: git.<%= buildpack %>-buildpack
   type: git
