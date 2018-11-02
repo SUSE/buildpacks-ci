@@ -84,8 +84,6 @@ jobs:
       - add-missing-<%= buildpack %>-dependencies
     trigger: true
   - get: ci
-    passed:
-      - add-missing-<%= buildpack %>-dependencies
   - get: cf-obs-binary-builder
     passed:
       - add-missing-<%= buildpack %>-dependencies
