@@ -22,20 +22,20 @@ git config --global user.name "${GIT_USER}"
 SUSE_TAG=$(ls s3.cf-buildpacks.suse.com/*.zip | grep -Eo 'v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
 SUSE_VERSION=$(echo ${SUSE_TAG} |  grep -Eo '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
 UPSTREAM_VERSION=$(echo ${SUSE_VERSION} |  grep -Eo '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
-TEMP_BRANCH_NAME=temp_$(date | sha1sum | cut -d' ' -f1)
 
 pushd git.cf-buildpack
   unzip -o ../s3.cf-buildpacks.suse.com/*.zip  manifest.yml VERSION
   # Create commit if the manifest.yml and VERSION are not up to date
   if ! git diff --no-ext-diff --quiet; then
-    git checkout -b ${TEMP_BRANCH_NAME}
+    # Make sure we can check out our remote branch because concourse restricts to master
+    git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+    git fetch origin
+
+    git checkout ${UPSTREAM_VERSION}
     git commit manifest.yml VERSION -m "Add SUSE based VERSION and manifest.yml"
-    git push origin ${TEMP_BRANCH_NAME}
+    git push origin ${UPSTREAM_VERSION}
 
     # Create release
-    hub release create -t ${TEMP_BRANCH_NAME} --message=${SUSE_TAG} ${SUSE_TAG}
-
-    # Delete temporary branch
-    git push origin :${TEMP_BRANCH_NAME}
+    hub release create -t ${UPSTREAM_VERSION} --message=${SUSE_TAG} ${SUSE_TAG}
   fi
 popd
