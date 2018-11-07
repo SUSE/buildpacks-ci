@@ -55,10 +55,11 @@ jobs:
 - name: run-<%= buildpack %>-brats
   serial_groups: [brats]
   plan:
-  - get: s3.suse-buildpacks-staging-<%= buildpack %>
-    trigger: true
-  - get: ci
-  - get: git.cf-<%= buildpack %>-buildpack
+  - aggregate:
+    - get: s3.suse-buildpacks-staging-<%= buildpack %>
+      trigger: true
+    - get: ci
+    - get: git.cf-<%= buildpack %>-buildpack
   - task: cleanup
     config:
       platform: linux
@@ -121,12 +122,13 @@ jobs:
         body: mail-output/body-failed.txt
 - name: create-final-<%= buildpack %>-buildpack
   plan:
-  - get: s3.suse-buildpacks-staging-<%= buildpack %>
-    trigger: true
-    passed:
-    - run-<%= buildpack %>-brats
-  - get: ci
-  - get: git.cf-<%= buildpack %>-buildpack
+  - aggregate:
+    - get: s3.suse-buildpacks-staging-<%= buildpack %>
+      trigger: true
+      passed:
+      - run-<%= buildpack %>-brats
+    - get: ci
+    - get: git.cf-<%= buildpack %>-buildpack
   - task: create-final-buildpack
     input_mapping:
       git.cf-buildpack: git.cf-<%= buildpack %>-buildpack
@@ -159,14 +161,15 @@ jobs:
       acl: public-read
 - name: add-manifest-and-tag-<%= buildpack %>-buildpack
   plan:
-  - get: s3.cf-buildpacks.suse.com-<%= buildpack %>
-    trigger: true
-    passed:
-    - create-final-<%= buildpack %>-buildpack
-  - get: ci
-  - get: git.cf-<%= buildpack %>-buildpack
-    passed:
-    - create-final-<%= buildpack %>-buildpack
+  - aggregate:
+    - get: s3.cf-buildpacks.suse.com-<%= buildpack %>
+      trigger: true
+      passed:
+      - create-final-<%= buildpack %>-buildpack
+    - get: ci
+    - get: git.cf-<%= buildpack %>-buildpack
+      passed:
+      - create-final-<%= buildpack %>-buildpack
   - task: add-manifest-and-tag
     input_mapping:
       git.cf-buildpack: git.cf-<%= buildpack %>-buildpack
@@ -191,12 +194,13 @@ jobs:
         path: ci/brats/tasks/add-manifest-and-tag.sh
 - name: update-<%= buildpack %>-buildpack-release
   plan:
-  - get: ci
-  - get: git.cf-<%= buildpack %>-buildpack-release
-  - get: s3.cf-buildpacks.suse.com-<%= buildpack %>
-    trigger: true
-    passed:
-    - add-manifest-and-tag-<%= buildpack %>-buildpack
+  - aggregate:
+    - get: ci
+    - get: git.cf-<%= buildpack %>-buildpack-release
+    - get: s3.cf-buildpacks.suse.com-<%= buildpack %>
+      trigger: true
+      passed:
+      - add-manifest-and-tag-<%= buildpack %>-buildpack
   - task: trigger-final-releases-pipeline
     input_mapping:
       git.cf-buildpack-release: git.cf-<%= buildpack %>-buildpack-release

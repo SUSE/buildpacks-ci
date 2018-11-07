@@ -49,10 +49,11 @@ jobs:
 <% buildpacks.each do |buildpack| %>
 - name: rebase-<%= buildpack %>-buildpack-against-upstream
   plan:
-  - get: <%= buildpack %>-buildpack-gh-release
-    trigger: true
-  - get: git.cf-<%= buildpack %>-buildpack
-  - get: ci
+  - aggregate:
+    - get: <%= buildpack %>-buildpack-gh-release
+      trigger: true
+    - get: git.cf-<%= buildpack %>-buildpack
+    - get: ci
   - task: rebase-against-upstream
     input_mapping:
       buildpack-gh-release: <%= buildpack %>-buildpack-gh-release
@@ -86,13 +87,14 @@ jobs:
 
 - name: add-missing-<%= buildpack %>-dependencies
   plan:
-  - get: <%= buildpack %>-buildpack-gh-release
-    trigger: true
-    passed:
-      - rebase-<%= buildpack %>-buildpack-against-upstream
-  - get: ci
-  - get: cf-obs-binary-builder
-  - get: depwatcher
+  - aggregate:
+    - get: <%= buildpack %>-buildpack-gh-release
+      trigger: true
+      passed:
+        - rebase-<%= buildpack %>-buildpack-against-upstream
+    - get: ci
+    - get: cf-obs-binary-builder
+    - get: depwatcher
   - task: add-missing-dependencies
     input_mapping: { buildpack-gh-release: <%= buildpack %>-buildpack-gh-release }
     params:
@@ -124,12 +126,13 @@ jobs:
 
 - name: create-<%= buildpack %>-buildpack-on-obs
   plan:
-  - get: <%= buildpack %>-buildpack-gh-release
-    passed:
-      - add-missing-<%= buildpack %>-dependencies
-    trigger: true
-  - get: ci
-  - get: cf-obs-binary-builder
+  - aggregate:
+    - get: <%= buildpack %>-buildpack-gh-release
+      passed:
+        - add-missing-<%= buildpack %>-dependencies
+      trigger: true
+    - get: ci
+    - get: cf-obs-binary-builder
   - task: create-on-obs
     input_mapping: { buildpack-gh-release: <%= buildpack %>-buildpack-gh-release }
     params:
