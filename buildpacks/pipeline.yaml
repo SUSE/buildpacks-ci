@@ -130,8 +130,6 @@ jobs:
     trigger: true
   - get: ci
   - get: cf-obs-binary-builder
-    passed:
-      - add-missing-<%= buildpack %>-dependencies
   - task: create-on-obs
     input_mapping: { buildpack-gh-release: <%= buildpack %>-buildpack-gh-release }
     params:
