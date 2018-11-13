@@ -35,7 +35,7 @@ pushd git.cf-buildpack
     git commit manifest.yml VERSION -m "Add SUSE based VERSION and manifest.yml"
     git push origin ${UPSTREAM_VERSION}
     # Keep our master synced with the latest released version
-    git push origin ${UPSTREAM_VERSION}:master -f
+    git push origin ${UPSTREAM_VERSION}:master
 
     # Create release
     hub release create -t ${UPSTREAM_VERSION} --message=${SUSE_TAG} ${SUSE_TAG}
