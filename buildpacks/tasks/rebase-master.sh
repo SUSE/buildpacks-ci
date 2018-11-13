@@ -41,11 +41,13 @@ pushd git.cf-buildpack
   git fetch upstream --tags
   git rebase v${UPSTREAM_VERSION}
 
-  git push origin master || git push -f origin master
   # Make sure that our fork has the same tags as upstream
   git push origin --tags
 
   # Fork
   git checkout -b ${UPSTREAM_VERSION}
   git push origin ${UPSTREAM_VERSION}
+
+  # Update master for the brats
+  git push -f origin ${UPSTREAM_VERSION}:master
 popd
