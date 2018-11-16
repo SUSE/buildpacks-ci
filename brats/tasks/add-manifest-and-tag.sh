@@ -19,9 +19,19 @@ chmod 0600 ~/.ssh/id_ecdsa
 git config --global user.email "${GIT_MAIL}"
 git config --global user.name "${GIT_USER}"
 
-SUSE_TAG=$(ls s3.cf-buildpacks.suse.com/*.zip | grep -Eo 'v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
+pushd s3.cf-buildpacks.suse.com
+RELEASE_TARBALL=$(ls *.zip)
+SHA1SUM=$(sha1sum ${RELEASE_TARBALL} | cut -d' ' -f1)
+SUSE_TAG=$(ls *.zip | grep -Eo 'v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
 SUSE_VERSION=$(echo ${SUSE_TAG} |  grep -Eo '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
 UPSTREAM_VERSION=$(echo ${SUSE_VERSION} |  grep -Eo '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
+MESSAGE=$(cat <<MESSAGE
+${SUSE_TAG}
+
+[${RELEASE_TARBALL}](https://cf-buildpacks.suse.com/${RELEASE_TARBALL}) \`sha1:${SHA1SUM}\`
+MESSAGE
+)
+popd
 
 pushd git.cf-buildpack
   unzip -o ../s3.cf-buildpacks.suse.com/*.zip  manifest.yml VERSION
@@ -38,6 +48,6 @@ pushd git.cf-buildpack
     git push origin ${UPSTREAM_VERSION}:master
 
     # Create release
-    hub release create -t ${UPSTREAM_VERSION} --message=${SUSE_TAG} ${SUSE_TAG}
+    hub release create -t ${UPSTREAM_VERSION} --message="${MESSAGE}" ${SUSE_TAG}
   fi
 popd
