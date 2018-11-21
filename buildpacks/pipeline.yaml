@@ -21,6 +21,8 @@ resources:
   type: git
   source:
     uri: https://github.com/cloudfoundry/buildpacks-ci.git
+    paths: [dockerfiles/depwatcher]
+
 <% buildpacks.each do |buildpack| %>
 - name: <%= buildpack %>-buildpack-gh-release
   type: github-release
