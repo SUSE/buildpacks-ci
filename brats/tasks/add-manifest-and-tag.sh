@@ -22,9 +22,9 @@ git config --global user.name "${GIT_USER}"
 pushd s3.cf-buildpacks.suse.com
 RELEASE_TARBALL=$(ls *.zip)
 SHA1SUM=$(sha1sum ${RELEASE_TARBALL} | cut -d' ' -f1)
-SUSE_TAG=$(ls *.zip | grep -Eo 'v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
-SUSE_VERSION=$(echo ${SUSE_TAG} |  grep -Eo '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
-UPSTREAM_VERSION=$(echo ${SUSE_VERSION} |  grep -Eo '[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+')
+SUSE_TAG=$(ls *.zip | grep -Eo 'v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+(\.[[:digit:]]+)*')
+SUSE_VERSION=$(echo ${SUSE_TAG} |  grep -Eo '[[:digit:]]+(\.[[:digit:]]+)+')
+UPSTREAM_VERSION=$(echo ${SUSE_VERSION} | sed -E 's/^([[:digit:]]+(\.[[:digit:]]+)+)\.[[:digit:]]+$/\1/')
 MESSAGE=$(cat <<MESSAGE
 ${SUSE_TAG}
 
@@ -34,15 +34,20 @@ MESSAGE
 popd
 
 pushd git.cf-buildpack
-  unzip -o ../s3.cf-buildpacks.suse.com/*.zip  manifest.yml VERSION
-  # Create commit if the manifest.yml and VERSION are not up to date
+  if [[ "${BUILDPACK}" != "java" ]]; then
+    FILES="manifest.yml VERSION"
+  else
+    FILES="config/version.yml"
+  fi
+  unzip -o ../s3.cf-buildpacks.suse.com/*.zip  $FILES
+  # Create commit if the SUSE related files are not up to date
   if ! git diff --no-ext-diff --quiet; then
     # Make sure we can check out our remote branch because concourse restricts to master
     git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
     git fetch origin
 
     git checkout ${UPSTREAM_VERSION}
-    git commit manifest.yml VERSION -m "Add SUSE based VERSION and manifest.yml"
+    git commit $FILES -m "Add SUSE $FILES"
     git push origin ${UPSTREAM_VERSION}
     # Keep our master synced with the latest released version
     git push origin ${UPSTREAM_VERSION}:master

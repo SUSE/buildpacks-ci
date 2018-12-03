@@ -1,0 +1,1 @@
+This pipeline monitors the java buildpack repository for new releases. As soon as a new release is out it will built the buildpack and upload it to s3. It also tags repo, creates a github release and triggers the final release pipeline.

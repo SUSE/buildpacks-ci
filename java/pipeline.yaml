@@ -1,0 +1,159 @@
+---
+resources:
+- name: ci
+  type: git
+  source:
+    uri: git@github.com:SUSE/buildpacks-ci.git
+    private_key: {{github-private-key}}
+- name: s3.cf-buildpacks.suse.com
+  type: s3
+  source:
+    access_key_id: {{aws-access-key}}
+    secret_access_key: {{aws-secret-key}}
+    bucket: cf-buildpacks.suse.com
+    regexp: java-buildpack-v(.*)-[a-f0-9]+\.zip
+- name: java-buildpack-gh-release
+  type: github-release
+  source:
+    owner: cloudfoundry
+    repository: java-buildpack
+    access_token: {{github-access-token}}
+- name: git.cf-java-buildpack
+  type: git
+  source:
+    uri: git@github.com:SUSE/cf-java-buildpack.git
+    private_key: {{github-private-key}}
+- name: git.cf-java-buildpack-release
+  type: git
+  source:
+    uri: git@github.com:SUSE/cf-java-buildpack-release.git
+    private_key: {{github-private-key}}
+jobs:
+- name: rebase-java-buildpack-against-upstream
+  plan:
+  - aggregate:
+    - get: java-buildpack-gh-release
+      trigger: true
+    - get: git.cf-java-buildpack
+    - get: ci
+  - task: rebase-against-upstream
+    input_mapping:
+      buildpack-gh-release: java-buildpack-gh-release
+      git.cf-buildpack: git.cf-java-buildpack
+    params:
+      BUILDPACK: java
+      GITHUB_PRIVATE_KEY: |
+        {{github-private-key}}
+      GIT_MAIL: {{github-username}}
+      GIT_USER: suse-cf-ci-bot
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/binary_builder_obs_opensuse
+      inputs:
+        - name: ci
+        - name: buildpack-gh-release
+        - name: git.cf-buildpack
+      outputs:
+      - name: out
+      run:
+        path: ci/buildpacks/tasks/rebase-master.sh
+- name: create-java
+  plan:
+  - aggregate:
+    - get: java-buildpack-gh-release
+      passed:
+        - rebase-java-buildpack-against-upstream
+      trigger: true
+    - get: git.cf-java-buildpack
+    - get: ci
+  - task: create-buildpack
+    input_mapping:
+      buildpack-gh-release: java-buildpack-gh-release
+      git.cf-buildpack: git.cf-java-buildpack
+    params:
+      BUILDPACK: java
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/binary_builder_obs_opensuse
+      inputs:
+        - name: ci
+        - name: buildpack-gh-release
+        - name: git.cf-buildpack
+      outputs:
+      - name: out
+      run:
+        path: ci/java/tasks/create-buildpack.sh
+    on_success:
+      do:
+      - put: s3.cf-buildpacks.suse.com
+        params:
+          file: out/java-buildpack*.zip
+- name: add-manifest-and-tag-java-buildpack
+  plan:
+  - aggregate:
+    - get: s3.cf-buildpacks.suse.com
+      trigger: true
+      passed:
+      - create-java
+    - get: ci
+    - get: git.cf-java-buildpack
+      passed:
+      - create-java
+  - task: add-manifest-and-tag
+    input_mapping:
+      git.cf-buildpack: git.cf-java-buildpack
+    params:
+      GITHUB_PRIVATE_KEY: |
+        {{github-private-key}}
+      GIT_MAIL: {{github-username}}
+      GIT_USER: suse-cf-ci-bot
+      GITHUB_TOKEN: ((github-access-token))
+      BUILDPACK: java
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/concourse-brats
+      inputs:
+        - name: ci
+        - name: s3.cf-buildpacks.suse.com
+        - name: git.cf-buildpack
+      run:
+        path: ci/brats/tasks/add-manifest-and-tag.sh
+- name: update-java-buildpack-release
+  plan:
+  - aggregate:
+    - get: ci
+    - get: git.cf-java-buildpack-release
+    - get: s3.cf-buildpacks.suse.com
+      trigger: true
+      passed:
+      - add-manifest-and-tag-java-buildpack
+  - task: trigger-final-releases-pipeline
+    input_mapping:
+      git.cf-buildpack-release: git.cf-java-buildpack-release
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/concourse-brats
+      inputs:
+        - name: ci
+        - name: git.cf-buildpack-release
+        - name: s3.cf-buildpacks.suse.com
+      params:
+        BUILDPACK: java
+        GITHUB_PRIVATE_KEY: |
+          {{github-private-key}}
+        GIT_MAIL: {{github-username}}
+        GIT_USER: suse-cf-ci-bot
+      run:
+        path: ci/brats/tasks/update-buildpack-release.sh

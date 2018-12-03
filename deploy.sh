@@ -14,6 +14,10 @@ buildpacks() {
   common buildpacks buildpacks
 }
 
+java() {
+  common java java-buildpacks
+}
+
 if test -n "${CONCOURSE_SECRETS_FILE:-}"; then
     if test -r "${CONCOURSE_SECRETS_FILE:-}" ; then
         secrets_file="${CONCOURSE_SECRETS_FILE}"
@@ -37,6 +41,9 @@ brats)
   ;;
 buildpacks)
 	buildpacks
+  ;;
+java)
+	java
   ;;
 *)
   echo "You didn't specify a pipeline to deploy. Available options: brats, buildpacks"

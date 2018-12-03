@@ -24,12 +24,24 @@ pushd git.cf-buildpack
   git fetch origin
 
   # Extract current SUSE changes
-  CURRENT_VERSION=$(cat VERSION |  grep -Eo '^[[:digit:]]+.[[:digit:]]+.[[:digit:]]+')
+  if [ -f VERSION ]; then
+    VERSION_FILE="VERSION"
+  elif [ -f config/version.yml ]; then
+    VERSION_FILE="config/version.yml"
+  else
+    echo "No supported version file found!"
+    exit 1
+  fi
+  CURRENT_VERSION=$(grep -Eo '[[:digit:]]+\.[[:digit:]]+(\.[[:digit:]]+)*' "$VERSION_FILE")
+
   git reset v${CURRENT_VERSION}
 
   # Reset SUSE VERSION and manifest.yml file to its original state
-  git checkout VERSION
-  git checkout manifest.yml
+  for file in "VERSION manifest.yml config/version.yml"; do
+    if [ -f "${file}" ]; then
+      git checkout "${file}"
+    fi
+  done
 
   # Create a commit for remaining SUSE changes
   if ! git diff --no-ext-diff --quiet; then
