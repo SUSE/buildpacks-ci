@@ -29,7 +29,13 @@ sed -i "s|https://s3.amazonaws.com/${STAGING_BUCKET_NAME}|${PRODUCTION_BUCKET_UR
 pushd git.cf-buildpack
 source .envrc
 cp ../manifest.yml manifest.yml
-(cd src/${BUILDPACK}/vendor/github.com/cloudfoundry/libbuildpack/packager/buildpack-packager && go install)
+if [ -e go.mod ]; then
+   wget https://raw.githubusercontent.com/cloudfoundry/libbuildpack/master/packager/buildpack-packager/main.go -O buildpack-packager.go
+   go install buildpack-packager.go
+else
+  (cd src/${BUILDPACK}/vendor/github.com/cloudfoundry/libbuildpack/packager/buildpack-packager && go install)
+fi
+
 if ! buildpack-packager build -cached=true -any-stack; then
   echo "buildpack-packager validation failed"
   exit 1
