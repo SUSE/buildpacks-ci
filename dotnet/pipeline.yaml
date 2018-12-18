@@ -1,0 +1,47 @@
+---
+<% versions = ["2.2.100"] %>
+
+resources:
+- name: ci
+  type: git
+  source:
+    uri: git@github.com:SUSE/buildpacks-ci.git
+    private_key: {{github-private-key}}
+    branch: dotnet-dependencies
+<% versions.each do |version| %>
+- name: git.dotnet-cli-<%= version %>
+  type: git
+  source:
+    uri: git@github.com:dotnet/cli.git
+    private_key: {{github-private-key}}
+    tag_filter: v<%= version %>
+ <% end %>
+
+jobs:
+<% versions.each do |version| %>
+- name: build-dotnet-<%= version %>
+  plan:
+  - aggregate:
+    - get: ci
+    - get: git.dotnet-cli-<%= version %>
+  - task: build
+    input_mapping:
+      git.dotnet-cli: git.dotnet-cli-<%= version %>
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: staging.registry.howdoi.website/splatform/rootfs-sle12
+          username: {{docker-internal-username}} 
+          password: {{docker-internal-password}} 
+      inputs:
+        - name: ci
+        - name: git.dotnet-cli
+      params:
+        DOTNET_VERSION: <%= version %>
+        TERM: xterm
+      run:
+        path: ci/dotnet/tasks/build.sh
+ <% end %>
+
