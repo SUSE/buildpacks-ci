@@ -1,5 +1,5 @@
 ---
-<% versions = ["2.2.100"] %>
+<% versions = ["2.1.302"] %>
 
 resources:
 - name: ci
@@ -15,8 +15,29 @@ resources:
     uri: git@github.com:dotnet/cli.git
     private_key: {{github-private-key}}
     tag_filter: v<%= version %>
- <% end %>
 
+- name: s3.dotnet-sdk-<%= version %>
+  type: s3
+  source:
+    access_key_id: {{aws-access-key}}
+    secret_access_key: {{aws-secret-key}}
+    bucket: cf-buildpacks.suse.com/dependencies/dotnet/
+    regexp: dotnet-sdk\.(.*)\.[a-f0-9]+\.tar\.xz
+- name: s3.dotnet-runtime-extracted-from-cli-<%= version %>
+  type: s3
+  source:
+    access_key_id: {{aws-access-key}}
+    secret_access_key: {{aws-secret-key}}
+    bucket: cf-buildpacks.suse.com/dependencies/dotnet/
+    regexp: dotnet-runtime\.(.*)\.[a-f0-9]+\.tar\.xz
+- name: s3.dotnet-aspnetcore-extracted-from-cli-<%= version %>
+  type: s3
+  source:
+    access_key_id: {{aws-access-key}}
+    secret_access_key: {{aws-secret-key}}
+    bucket: cf-buildpacks.suse.com/dependencies/dotnet/
+    regexp: dotnet-aspnetcore\.(.*)\.[a-f0-9]+\.tar\.xz
+ <% end %>
 jobs:
 <% versions.each do |version| %>
 - name: build-dotnet-<%= version %>
@@ -33,15 +54,27 @@ jobs:
         type: docker-image
         source:
           repository: staging.registry.howdoi.website/splatform/rootfs-sle12
-          username: {{docker-internal-username}} 
-          password: {{docker-internal-password}} 
+          username: {{docker-internal-username}}
+          password: {{docker-internal-password}}
       inputs:
         - name: ci
         - name: git.dotnet-cli
+      outputs:
+        - name: artifacts
       params:
         DOTNET_VERSION: <%= version %>
         TERM: xterm
       run:
         path: ci/dotnet/tasks/build.sh
+    on_success:
+      do:
+      - put: s3.dotnet-sdk-<%= version %>
+        params:
+          file: artifacts/dotnet-sdk*.tar.xz
+      - put: s3.dotnet-runtime-extracted-from-cli-<%= version %>
+        params:
+          file: artifacts/dotnet-runtime*.tar.xz
+      - put: s3.dotnet-aspnetcore-extracted-from-cli-<%= version %>
+        params:
+          file: artifacts/dotnet-aspnetcore*.tar.xz
  <% end %>
-
