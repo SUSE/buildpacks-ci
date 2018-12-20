@@ -1,5 +1,5 @@
 ---
-<% versions = ["2.1.302"] %>
+<% versions = ["2.1.302", "2.1.403"] %>
 
 resources:
 - name: ci

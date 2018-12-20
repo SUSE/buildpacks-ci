@@ -1,7 +1,8 @@
 require_relative 'dotnet_framework_extractor'
 
-# NOTE: Adapted from https://github.com/cloudfoundry/buildpacks-ci/blob/develop/tasks/build-binary-new/dotnet_framework_extractor.rb
-# Also, upstream seems to checkout from specific commits.. https://github.com/cloudfoundry/buildpacks-ci/commit/9619b445198ce39d355055fb664df4deeb77021d
+# NOTE: 
+# Adapted from https://github.com/cloudfoundry/buildpacks-ci/blob/develop/tasks/build-binary-new/dotnet_framework_extractor.rb
+# Also, upstream seems to checkout from specific commits (see https://github.com/cloudfoundry/buildpacks-ci/commit/9619b445198ce39d355055fb664df4deeb77021d)
 # See also https://github.com/cloudfoundry/buildpacks-ci/commit/8b34b2ee0ee0c77ddae9b9ba6ff30b78298c7534
 
 if ARGV.length != 3
@@ -35,7 +36,7 @@ puts "Extracting dotnet-sdk"
 Dir.chdir(dotnet_dir) do
 	dir = Dir.tmpdir
 	ext = 'tar.xz'
-	temptar=File.join(dir, "dotnet-sdk.#{ext}")
+	temptar = File.join(dir, "dotnet-sdk.#{ext}")
 	system('tar', 'Jcf', temptar, '.')
 	sha      = Digest::SHA256.hexdigest(open(temptar).read)
 	filename = "dotnet-sdk.#{version}.linux-amd64-#{stack}-#{sha[0..7]}.#{ext}"
