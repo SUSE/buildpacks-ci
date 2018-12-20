@@ -7,6 +7,8 @@ STACK="${STACK:-sle12}"
 
 OS="$(uname | tr '[:upper:]' '[:lower:]')"
 
+export TERM="linux"
+export DropSuffix="true"
 
 pushd git.dotnet-cli
 
@@ -27,6 +29,14 @@ pushd git.dotnet-cli
 		   [[ "$PATCH" -lt "300" ]]
 		then
 			sed -i 's/WriteDynamicPropsToStaticPropsFiles "\${args\[\@\]}"/WriteDynamicPropsToStaticPropsFiles/' run-build.sh
+		fi
+
+		if [[ "$MAJOR" -eq "2" ]] && \
+		   [[ "$MINOR" -eq "0" ]] && \
+		   [[ "$PATCH" -eq "3" ]]
+		then
+			sed -i 's/sles/opensuse/' /etc/os-release
+			sed -i 's/12.3/42.1/' /etc/os-release
 		fi
 
 		if [[ "$MAJOR" -eq "2" ]] && \
