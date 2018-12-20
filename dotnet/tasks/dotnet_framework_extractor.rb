@@ -5,6 +5,8 @@ require 'pathname'
 require 'fileutils'
 require 'digest'
 
+# NOTE:
+# This is an adaptation of https://github.com/cloudfoundry/buildpacks-ci/blob/4ebb48e2c78f390172e300a49f690deb477cb7ba/tasks/build-binary-new/dotnet_framework_extractor.rb
 class DotnetFrameworkExtractor
   attr_reader :base_dir
 
@@ -53,7 +55,6 @@ class DotnetFrameworkExtractor
   def extract_framework_dep(sdk_dir, tar, package_names, remove_frameworks)
     Dir.chdir(sdk_dir) do
       paths = package_names.map {|package| File.join("shared", package)}
-#      require 'pry'; binding.pry
       version = Dir[File.join(paths.first, "*")]
                   .map {|path| Pathname.new(path).basename.to_s}
                   .sort_by {|version| Gem::Version.new(version)}
@@ -72,6 +73,7 @@ class DotnetFrameworkExtractor
     end
   end
 
+  # XXX: this was adapted from https://github.com/cloudfoundry/buildpacks-ci/blob/4ebb48e2c78f390172e300a49f690deb477cb7ba/tasks/build-binary-new/artifact_output.rb#L8
   def create_dependency(tar, version, framework_name)
 	sha      = Digest::SHA256.hexdigest(open(tar).read)
 	ext = "tar.xz"
