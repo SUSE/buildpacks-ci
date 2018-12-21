@@ -1,6 +1,6 @@
 require_relative 'dotnet_framework_extractor'
 
-# NOTE: 
+# NOTE:
 # Adapted from https://github.com/cloudfoundry/buildpacks-ci/blob/develop/tasks/build-binary-new/dotnet_framework_extractor.rb
 # Also, upstream seems to checkout from specific commits (see https://github.com/cloudfoundry/buildpacks-ci/commit/9619b445198ce39d355055fb664df4deeb77021d)
 # See also https://github.com/cloudfoundry/buildpacks-ci/commit/8b34b2ee0ee0c77ddae9b9ba6ff30b78298c7534
@@ -24,12 +24,17 @@ framework_extractor.extract_runtime(remove_frameworks)
 
 
 
-# NOTE: There are only separate ASP.net packages for dotnet core 2+, but 
+# NOTE: There are only separate ASP.net packages for dotnet core 2+, but
 # not all of them ships aspnetcore, so it might fail if the dotnet/cli version
 # does not ship it.
 if major.to_i >= 2
 	puts "Extracting dotnet-aspnetcore"
-	framework_extractor.extract_aspnetcore(remove_frameworks)
+  # TODO: Check also for Microsoft.AspNetCore.All
+  if Dir.exist?(File.join(dotnet_dir,"shared", "Microsoft.AspNetCore.App"))
+    framework_extractor.extract_aspnetcore(remove_frameworks)
+  else
+    puts "warning: dotnet-aspnetcore not present in the sdk"
+  end
 end
 
 puts "Extracting dotnet-sdk"
