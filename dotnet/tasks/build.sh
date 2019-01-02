@@ -2,16 +2,40 @@
 set -e
 set -x
 
-DOTNET_VERSION="${DOTNET_VERSION:-2.1.302}"
+
+DOTNET_VERSION="${DOTNET_VERSION:-$(cat dotnet-core-buildpack-gh-release/body | grep 'Add dotnet-sdk' | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')}"
+#DOTNET_VERSION="${DOTNET_VERSION:-2.2.100}"
 STACK="${STACK:-sle12}"
 BUILD="${BUILD:-true}"
 DOTNET_BUNDLE_URL="${DOTNET_BUNDLE_URL:-https://dotnetcli.azureedge.net/dotnet/Sdk/$DOTNET_VERSION/dotnet-sdk-$DOTNET_VERSION-linux-x64.tar.gz}"
 LOCAL_BUILD="${LOCAL_BUILD:-false}"
+DOTNET_SHA="${DOTNET_SHA:-}"
 
 OS="$(uname | tr '[:upper:]' '[:lower:]')"
 
 export TERM="linux"
 export DropSuffix="true"
+
+function get_commit_sha() {
+	# Get crystal to build depwatcher
+	curl -s https://api.github.com/repos/crystal-lang/crystal/releases/latest | grep "browser_download_url.*linux-x86_64" | cut -d : -f 2,3 | tr -d '""' | wget -i - -O crystal-latest.tar.gz
+	tar -xf crystal-latest.tar.gz
+	rm -rf crystal-latest.tar.gz
+
+	pushd crystal-*
+		[ ! -e "/usr/local/bin/crystal" ] && ln -s $(pwd)/bin/crystal /usr/local/bin/crystal
+		[ ! -e "/usr/local/bin/shards" ] && ln -s $(pwd)/bin/shards /usr/local/bin/shards
+	popd
+
+	[ ! -d "upstream-buildpacks-ci" ] && git clone https://github.com/cloudfoundry/buildpacks-ci upstream-buildpacks-ci
+
+	pushd upstream-buildpacks-ci/dockerfiles/depwatcher
+		shards && crystal spec --no-debug
+		shards build --production
+		# FIXME: Do we need version_filter? https://www.pivotaltracker.com/n/projects/1042066/stories/162580717
+		DOTNET_SHA=$(echo '{"source":{"name":"dotnet-sdk","type":"dotnet-sdk", "tag_regex": "^(v1\\.\\d+\\.\\d+|v2\\.\\d+\\.\\d+\\+dependencies)$" }, "version":{"ref":"'$DOTNET_VERSION'", "url": "https://github.com/dotnet/cli"}}' | bin/in /tmp 2>&1 | grep 'sha' | jq -r '.git_commit_sha')
+  popd
+}
 
 function build() {
 	echo "Building dotnet $DOTNET_VERSION for $STACK stack"
@@ -67,6 +91,27 @@ function build() {
 }
 
 if [ "$BUILD" = true ]; then
+
+	if [ "$LOCAL_BUILD" = true ] && [ ! -d "git.dotnet-cli" ]; then
+		git clone https://github.com/dotnet/cli git.dotnet-cli
+		pushd git.dotnet-cli
+			git checkout $DOTNET_VERSION || true
+		popd
+ 	fi
+
+	# dotnet/cli tags and sha returned by depwatcher are not the same
+	# Retrieve sha from depwatcher if we can and if we didn't specified one manually
+	if [[ -z "$DOTNET_SHA" ]]; then
+		get_commit_sha || true
+	fi
+
+	if [[ ! -z "$DOTNET_SHA" ]]; then
+		echo "Checking out SHA $DOTNET_SHA"
+		pushd git.dotnet-cli
+			git checkout $DOTNET_SHA
+		popd
+	fi
+
 	build
 else
 	TARBALL="$(basename $DOTNET_BUNDLE_URL)"
@@ -76,11 +121,7 @@ else
 fi
 
 # Extract dependencies from sdk and build separate dependencies
-if [ "$LOCAL_BUILD" = true ]; then
-	ruby extractor.rb ${STACK} ${DOTNET_VERSION} cli-build
-else
-	ruby ci/dotnet/tasks/extractor.rb ${STACK} ${DOTNET_VERSION} cli-build
-fi
+ruby ci/dotnet/tasks/extractor.rb ${STACK} ${DOTNET_VERSION} cli-build
 
 [ ! -d "artifacts" ] && mkdir -p artifacts
 mv *.tar.xz artifacts
