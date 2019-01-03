@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -e -o pipefail
 
 echo "[CI] ${BUILDPACK} BRATs have failed" > mail-output/subject-failed.txt
 
