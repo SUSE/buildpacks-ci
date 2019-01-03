@@ -28,6 +28,8 @@ UPSTREAM_VERSION=$(echo ${SUSE_VERSION} | sed -E 's/^([[:digit:]]+(\.[[:digit:]]
 MESSAGE=$(cat <<MESSAGE
 ${SUSE_TAG}
 
+[Upstream Release Notes for ${UPSTREAM_VERSION}](https://github.com/cloudfoundry/${BUILDPACK}-buildpack/releases/tag/v${UPSTREAM_VERSION})
+
 [${RELEASE_TARBALL}](https://cf-buildpacks.suse.com/${RELEASE_TARBALL}) \`sha1:${SHA1SUM}\`
 MESSAGE
 )
