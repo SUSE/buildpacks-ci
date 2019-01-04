@@ -20,3 +20,8 @@ unzip ../s3.suse-buildpacks-staging/*.zip  manifest.yml VERSION 2>&1 | tee ../ma
 git commit manifest.yml VERSION -m "Replace manifest and VERSION by the version to test" 2>&1 | tee ../mail-output/body-failed.txt
 
 scripts/brats.sh 2>&1 | tee ../mail-output/body-failed.txt
+
+# run integration tests
+if [ -e scripts/integration.sh ]; then
+  scripts/integration.sh 2>&1 | tee ../mail-output/body-failed.txt
+fi
