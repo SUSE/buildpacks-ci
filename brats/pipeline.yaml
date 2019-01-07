@@ -82,7 +82,7 @@ jobs:
       params:
         subject_text: "BRATS cleanup failed"
         body_text: "There was a problem cleaning up the BRATS cluster. BRATS could not be run!"
-  - task: run-brats
+  - task: run-tests
     input_mapping:
       git.cf-buildpack: git.cf-<%= buildpack %>-buildpack
       s3.suse-buildpacks-staging: s3.suse-buildpacks-staging-<%= buildpack %>
@@ -114,7 +114,7 @@ jobs:
         GIT_MAIL: {{github-username}}
         GIT_USER: suse-cf-ci-bot
       run:
-        path: ci/brats/tasks/run-brats.sh
+        path: ci/brats/tasks/run-tests.sh
     on_failure:
       put: email.suse
       params:

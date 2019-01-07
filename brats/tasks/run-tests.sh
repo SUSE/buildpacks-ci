@@ -23,5 +23,6 @@ scripts/brats.sh 2>&1 | tee ../mail-output/body-failed.txt
 
 # run integration tests
 if [ -e scripts/integration.sh ]; then
-  scripts/integration.sh 2>&1 | tee ../mail-output/body-failed.txt
+  # Do not fail on integration tests at the moment
+  scripts/integration.sh 2>&1 | tee ../mail-output/body-failed.txt || true
 fi
