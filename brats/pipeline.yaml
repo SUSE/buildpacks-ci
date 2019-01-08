@@ -1,5 +1,5 @@
 ---
-<% buildpacks = ["ruby", "go", "python", "php", "nodejs", "staticfile", "binary"] %>
+<% buildpacks = ["ruby", "go", "python", "php", "nodejs", "staticfile", "nginx", "binary"] %>
 resource_types:
 - name: email
   type: docker-image
