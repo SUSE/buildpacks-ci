@@ -52,7 +52,7 @@ pushd git.cf-buildpack
     git commit $FILES -m "Add SUSE $FILES"
     git push origin ${UPSTREAM_VERSION}
     # Keep our master synced with the latest released version
-    git push origin ${UPSTREAM_VERSION}:master
+    git push -f origin ${UPSTREAM_VERSION}:master
 
     # Create release
     hub release create -t ${UPSTREAM_VERSION} --message="${MESSAGE}" ${SUSE_TAG}
