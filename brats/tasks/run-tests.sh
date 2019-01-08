@@ -2,7 +2,7 @@
 
 set -e -o pipefail
 
-echo "[CI] ${BUILDPACK} BRATs have failed" > mail-output/subject-failed.txt
+echo "[CI] ${BUILDPACK} ${TEST_SUITE} tests have failed" > mail-output/subject-failed.txt
 
 source ci/brats/tasks/cf_login.sh 2>&1 | tee mail-output/body-failed.txt
 
@@ -19,10 +19,9 @@ unzip ../s3.suse-buildpacks-staging/*.zip  manifest.yml VERSION 2>&1 | tee ../ma
 
 git commit manifest.yml VERSION -m "Replace manifest and VERSION by the version to test" 2>&1 | tee ../mail-output/body-failed.txt
 
-scripts/brats.sh 2>&1 | tee ../mail-output/body-failed.txt
-
-# run integration tests
-if [ -e scripts/integration.sh ]; then
+if [ "${TEST_SUITE}" == "brats" ]; then
+  scripts/${TEST_SUITE}.sh 2>&1 | tee ../mail-output/body-failed.txt
+else
   # Do not fail on integration tests at the moment
-  scripts/integration.sh 2>&1 | tee ../mail-output/body-failed.txt || true
+  scripts/${TEST_SUITE}.sh 2>&1 | tee ../mail-output/body-failed.txt || true
 fi
