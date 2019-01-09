@@ -53,7 +53,7 @@ resources:
 jobs:
 <% buildpacks.each do |buildpack| %>
 - name: run-<%= buildpack %>-brats
-  serial_groups: [brats]
+  serial_groups: [tests]
   plan:
   - aggregate:
     - get: s3.suse-buildpacks-staging-<%= buildpack %>
@@ -122,7 +122,7 @@ jobs:
         subject: mail-output/subject-failed.txt
         body: mail-output/body-failed.txt
 - name: run-<%= buildpack %>-integration-tests
-  serial_groups: [brats]
+  serial_groups: [tests]
   plan:
   - aggregate:
     - get: s3.suse-buildpacks-staging-<%= buildpack %>
