@@ -198,7 +198,7 @@ jobs:
     - get: s3.suse-buildpacks-staging-<%= buildpack %>
       trigger: true
       passed:
-      - run-<%= buildpack %>-integration-tests
+      - run-<%= buildpack %>-brats
     - get: ci
     - get: git.cf-<%= buildpack %>-buildpack
   - task: create-final-buildpack

@@ -23,5 +23,5 @@ if [ "${TEST_SUITE}" == "brats" ]; then
   scripts/${TEST_SUITE}.sh 2>&1 | tee ../mail-output/body-failed.txt
 else
   # Do not fail on integration tests at the moment
-  scripts/${TEST_SUITE}.sh 2>&1 | tee ../mail-output/body-failed.txt || true
+  scripts/${TEST_SUITE}.sh 2>&1 | tee ../mail-output/body-failed.txt
 fi
