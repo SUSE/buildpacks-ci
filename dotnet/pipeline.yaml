@@ -1,0 +1,194 @@
+---
+resources:
+- name: dotnet-core-buildpack-gh-release
+  type: github-release
+  source:
+        owner: cloudfoundry
+        repository: dotnet-core-buildpack
+        access_token: {{github-access-token}}
+- name: git.cf-dotnet-core-buildpack
+  type: git
+  source:
+    uri: git@github.com:SUSE/cf-dotnet-core-buildpack.git
+    private_key: {{github-private-key}}
+- name: ci
+  type: git
+  source:
+    uri: git@github.com:SUSE/buildpacks-ci.git
+    private_key: {{github-private-key}}
+    branch: dotnet-dependencies
+- name: s3.dotnet-sdk
+  type: s3
+  source:
+   access_key_id: {{aws-access-key}}
+   secret_access_key: {{aws-secret-key}}
+   bucket: suse-buildpacks-staging/dependencies/dotnet/
+   regexp: dotnet-sdk\.(.*)\.[a-z0-9-]+\.tar\.xz
+- name: s3.dotnet-runtime-extracted-from-cli
+  type: s3
+  source:
+   access_key_id: {{aws-access-key}}
+   secret_access_key: {{aws-secret-key}}
+   bucket: suse-buildpacks-staging/dependencies/dotnet/
+   regexp: dotnet-runtime\.(.*)\.[a-z0-9-]+\.tar\.xz
+- name: s3.dotnet-aspnetcore-extracted-from-cli
+  type: s3
+  source:
+   access_key_id: {{aws-access-key}}
+   secret_access_key: {{aws-secret-key}}
+   bucket: suse-buildpacks-staging/dependencies/dotnet/
+   regexp: dotnet-aspnetcore\.(.*)\.[a-z0-9-]+\.tar\.xz
+- name: cf-obs-binary-builder
+  type: git
+  source:
+    uri: git@github.com:SUSE/cf-obs-binary-builder.git
+    private_key: {{github-private-key}}
+    branch: dotnet-core
+- name: depwatcher
+  type: git
+  source:
+    uri: https://github.com/cloudfoundry/buildpacks-ci.git
+    paths: [dockerfiles/depwatcher]
+jobs:
+- name: build-dotnet-dependencies-from-release
+  plan:
+  - aggregate:
+    - get: ci
+    - get: dotnet-core-buildpack-gh-release
+  - task: build
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: staging.registry.howdoi.website/splatform/rootfs-sle12
+          username: {{docker-internal-username}}
+          password: {{docker-internal-password}}
+      inputs:
+        - name: ci
+        - name: dotnet-core-buildpack-gh-release
+      outputs:
+        - name: artifacts
+      params:
+        TERM: xterm
+        LOCAL_BUILD: "true"
+      run:
+        path: ci/dotnet/tasks/build.sh
+    on_success:
+       do:
+       - put: s3.dotnet-sdk
+         params:
+           file: artifacts/dotnet-sdk*.tar.xz
+       - put: s3.dotnet-runtime-extracted-from-cli
+         params:
+           file: artifacts/dotnet-runtime*.tar.xz
+       - put: s3.dotnet-aspnetcore-extracted-from-cli
+         params:
+           file: artifacts/dotnet-aspnetcore*.tar.xz
+- name: rebase-dotnet-buildpack-against-upstream
+  plan:
+  - aggregate:
+    - get: dotnet-core-buildpack-gh-release
+      trigger: true
+    - get: git.cf-dotnet-core-buildpack
+    - get: ci
+  - task: rebase-against-upstream
+    input_mapping:
+      buildpack-gh-release: dotnet-core-buildpack-gh-release
+      git.cf-buildpack: git.cf-dotnet-core-buildpack
+    params:
+      BUILDPACK: dotnet-core
+      GITHUB_PRIVATE_KEY: |
+        {{github-private-key}}
+      GIT_MAIL: {{github-username}}
+      GIT_USER: suse-cf-ci-bot
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/binary_builder_obs_opensuse
+      inputs:
+        - name: ci
+        - name: buildpack-gh-release
+        - name: git.cf-buildpack
+      outputs:
+      - name: out
+      run:
+        path: ci/dotnet/tasks/rebase-master.sh
+- name: add-missing-dotnet-core-obs-dependencies
+  plan:
+  - aggregate:
+    - get: dotnet-core-buildpack-gh-release
+      trigger: true
+      passed:
+        - rebase-dotnet-buildpack-against-upstream
+    - get: ci
+    - get: cf-obs-binary-builder
+    - get: depwatcher
+  - task: add-missing-dependencies
+    input_mapping: { buildpack-gh-release: dotnet-core-buildpack-gh-release }
+    params:
+      OBS_BUILDPACK_PROJECT: {{obs-buildpacks-staging-project}}
+      STAGING_BUILDPACKS_BUCKET: {{s3-staging-buildpacks-bucket}}
+      OBS_DEPENDENCY_PROJECT: {{obs-buildpack-dependencies-staging-project}}
+      BUILDPACK: dotnet-core
+      OBS_USERNAME:  {{obs-username}}
+      OBS_PASSWORD:  {{obs-password}}
+      DEPDIR: '.'
+      BUILD_STACKS: 'sle12,opensuse42'
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/binary_builder_obs_opensuse
+      inputs:
+        - name: ci
+        - name: cf-obs-binary-builder
+        - name: depwatcher
+        - name: buildpack-gh-release
+      outputs:
+      - name: out
+      run:
+        path: ci/buildpacks/tasks/add-missing-dependencies.sh
+- name: create-dotnet-core-buildpack-on-obs
+  plan:
+  - aggregate:
+    - get: dotnet-core-buildpack-gh-release
+      passed:
+        - rebase-dotnet-buildpack-against-upstream
+        - add-missing-dotnet-core-obs-dependencies
+      trigger: true
+    - get: ci
+    - get: cf-obs-binary-builder
+  - task: create-on-obs
+    input_mapping: { buildpack-gh-release: dotnet-core-buildpack-gh-release }
+    params:
+      OBS_DEPENDENCY_PROJECT: {{obs-buildpack-dependencies-staging-project}}
+      OBS_BUILDPACK_PROJECT: {{obs-buildpacks-staging-project}}
+      STAGING_BUILDPACKS_BUCKET: {{s3-staging-buildpacks-bucket}}
+      BUILDPACK: dotnet-core
+      OBS_USERNAME:  {{obs-username}}
+      OBS_PASSWORD:  {{obs-password}}
+      WAITING_TIME_SECS: 60
+      NUMBER_OF_RETRIES: 50
+      CACHE_SOURCES: true
+      AWS_ACCESS_KEY_ID: {{aws-access-key}}
+      AWS_SECRET_ACCESS_KEY: {{aws-secret-key}}
+      AWS_DEFAULT_REGION: us-east-1
+      BUILD_STACKS: sle12
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/binary_builder_obs_opensuse
+      inputs:
+        - name: ci
+        - name: cf-obs-binary-builder
+        - name: buildpack-gh-release
+      outputs:
+      - name: out
+      run:
+        path: ci/dotnet/tasks/create-buildpack-on-obs.sh

@@ -23,5 +23,18 @@ pip install awscli --upgrade --user
 # could consume different components
 ~/.local/bin/aws s3 cp s3://${STAGING_BUILDPACKS_BUCKET}/dependencies/dotnet dotnet-deps --recursive
 
-echo "Buildpack ${BUILDPACK} could not be created" > $ROOTDIR/out/failure_email_notification_subject
-DEPDIR=dotnet-deps $ROOTDIR/cf-obs-binary-builder/bin/cf_obs_binary_builder buildpack ${BUILDPACK} ${release_tag} ${revision} 2>&1 | tee $ROOTDIR/out/failure_email_notification_body
+echo "Buildpack ${BUILDPACK} could not be created" > ${ROOTDIR}/out/failure_email_notification_subject
+
+DEPDIR=${ROOTDIR}/dotnet-deps ${ROOTDIR}/cf-obs-binary-builder/bin/cf_obs_binary_builder \
+       buildpack ${BUILDPACK} ${release_tag} ${revision} \
+       2>&1 | tee ${ROOTDIR}/out/failure_email_notification_body
+
+exit_status=${PIPESTATUS[0]}
+
+echo "exit status: ${exit_status}"
+
+if [ ${exit_status} -eq 1 ]; then
+  exit 1
+else
+  exit 0
+fi
