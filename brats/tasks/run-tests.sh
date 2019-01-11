@@ -17,7 +17,12 @@ rm manifest.yml VERSION 2>&1 | tee ../mail-output/body-failed.txt
 
 unzip ../s3.suse-buildpacks-staging/*.zip  manifest.yml VERSION 2>&1 | tee ../mail-output/body-failed.txt
 
-git commit manifest.yml VERSION -m "Replace manifest and VERSION by the version to test" 2>&1 | tee ../mail-output/body-failed.txt
+# In some cases the manifest stays intact after inflation and we don't want
+# the script to exit because there is nothing to commit.
+# (e.g. the binary buildpack comes from upstream)
+if [[ -n $(git status -s | grep ' M') ]]; then
+  git commit manifest.yml VERSION -m "Replace manifest and VERSION by the version to test" 2>&1 | tee ../mail-output/body-failed.txt
+fi
 
 if [ "${TEST_SUITE}" == "brats" ]; then
   scripts/${TEST_SUITE}.sh 2>&1 | tee ../mail-output/body-failed.txt

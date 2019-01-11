@@ -38,7 +38,9 @@ resources:
   type: s3
   source:
     bucket: suse-buildpacks-staging
-    regexp: <%= buildpack %>-buildpack-v([0-9-.]+)-pre-[0-9a-f]{8}\.zip
+    # TODO: Switch to just using '-' when all the buildpacks have a '-' version.
+    #regexp: <%= buildpack %>-buildpack-v([0-9-.]+)-pre-[0-9a-f]{8}\.zip
+    regexp: <%= buildpack %>[-_]buildpack-v([0-9-.]+)-pre-[0-9a-f]{8}\.zip
     access_key_id: {{aws-access-key}}
     secret_access_key: {{aws-secret-key}}
     private_key: {{github-private-key}}
@@ -46,7 +48,9 @@ resources:
   type: s3
   source:
     bucket: cf-buildpacks.suse.com
-    regexp: <%= buildpack %>-buildpack-v([0-9-.]+)-[0-9a-f]{8}\.zip
+    # TODO: Switch to just using '-' when all the buildpacks have a '-' version.
+    #regexp: <%= buildpack %>-buildpack-v([0-9-.]+)-[0-9a-f]{8}\.zip
+    regexp: <%= buildpack %>[-_]buildpack-v([0-9-.]+)-[0-9a-f]{8}\.zip
     access_key_id: {{aws-access-key}}
     secret_access_key: {{aws-secret-key}}
 <% end %>
