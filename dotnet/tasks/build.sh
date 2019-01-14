@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
-set -x
 
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+ROOTDIR=$DIR/../../../
 
 DOTNET_VERSION="${DOTNET_VERSION:-$(cat dotnet-core-buildpack-gh-release/body | grep 'Add dotnet-sdk' | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')}"
 #DOTNET_VERSION="${DOTNET_VERSION:-2.2.100}"
@@ -18,7 +19,7 @@ export DropSuffix="true"
 
 function get_commit_sha() {
 	# Get crystal to build depwatcher
-	curl -s https://api.github.com/repos/crystal-lang/crystal/releases/latest | grep "browser_download_url.*linux-x86_64" | cut -d : -f 2,3 | tr -d '""' | wget -i - -O crystal-latest.tar.gz
+	curl -H "Authorization: token ${GITHUB_API_KEY}" -s https://api.github.com/repos/crystal-lang/crystal/releases/latest | grep "browser_download_url.*linux-x86_64" | cut -d : -f 2,3 | tr -d '""' | wget -i - -O crystal-latest.tar.gz
 	tar -xf crystal-latest.tar.gz
 	rm -rf crystal-latest.tar.gz
 
@@ -27,14 +28,12 @@ function get_commit_sha() {
 		[ ! -e "/usr/local/bin/shards" ] && ln -s $(pwd)/bin/shards /usr/local/bin/shards
 	popd
 
-	[ ! -d "upstream-buildpacks-ci" ] && git clone https://github.com/cloudfoundry/buildpacks-ci upstream-buildpacks-ci
+	echo "Compiling depwatcher"
+	crystal build $ROOTDIR/depwatcher/dockerfiles/depwatcher/src/in.cr -o /usr/bin/depwatcher
+	chmod +x /usr/bin/depwatcher
 
-	pushd upstream-buildpacks-ci/dockerfiles/depwatcher
-		shards && crystal spec --no-debug
-		shards build --production
-		# FIXME: Do we need version_filter? https://www.pivotaltracker.com/n/projects/1042066/stories/162580717
-		DOTNET_SHA=$(echo '{"source":{"name":"dotnet-sdk","type":"dotnet-sdk", "tag_regex": "^(v1\\.\\d+\\.\\d+|v2\\.\\d+\\.\\d+\\+dependencies)$" }, "version":{"ref":"'$DOTNET_VERSION'", "url": "https://github.com/dotnet/cli"}}' | bin/in /tmp 2>&1 | grep 'sha' | jq -r '.git_commit_sha')
-  popd
+	# FIXME: Do we need version_filter? https://www.pivotaltracker.com/n/projects/1042066/stories/162580717
+	DOTNET_SHA=$(echo '{"source":{"name":"dotnet-sdk","type":"dotnet-sdk", "tag_regex": "^(v1\\.\\d+\\.\\d+|v2\\.\\d+\\.\\d+\\+dependencies)$" }, "version":{"ref":"'$DOTNET_VERSION'", "url": "https://github.com/dotnet/cli"}}' | /usr/bin/depwatcher /tmp 2>&1 | grep 'sha' | jq -r '.git_commit_sha')
 }
 
 function build() {
@@ -89,6 +88,11 @@ function build() {
 		[ -d "bin/2/${OS}-x64/dotnet" ] && mv bin/2/${OS}-x64/dotnet ../cli-build
 	popd
 }
+
+if [[ -z "${DOTNET_VERSION}" ]]; then
+	echo "No DOTNET_VERSION specified"
+	exit 1
+fi
 
 if [ "$BUILD" = true ]; then
 
