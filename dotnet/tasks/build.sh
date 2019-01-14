@@ -19,7 +19,7 @@ export DropSuffix="true"
 
 function get_commit_sha() {
 	# Get crystal to build depwatcher
-	curl -H "Authorization: token ${GITHUB_API_KEY}" -s https://api.github.com/repos/crystal-lang/crystal/releases/latest | grep "browser_download_url.*linux-x86_64" | cut -d : -f 2,3 | tr -d '""' | wget -i - -O crystal-latest.tar.gz
+	curl -H "Authorization: token ${OAUTH_AUTHORIZATION_TOKEN}" -s https://api.github.com/repos/crystal-lang/crystal/releases/latest | grep "browser_download_url.*linux-x86_64" | cut -d : -f 2,3 | tr -d '""' | wget -i - -O crystal-latest.tar.gz
 	tar -xf crystal-latest.tar.gz
 	rm -rf crystal-latest.tar.gz
 
@@ -99,6 +99,7 @@ if [ "$BUILD" = true ]; then
 	if [ "$LOCAL_BUILD" = true ] && [ ! -d "git.dotnet-cli" ]; then
 		git clone https://github.com/dotnet/cli git.dotnet-cli
 		pushd git.dotnet-cli
+			echo "Trying to checkout Dotnet version: ${DOTNET_VERSION}"
 			git checkout $DOTNET_VERSION || true
 		popd
  	fi
@@ -106,6 +107,7 @@ if [ "$BUILD" = true ]; then
 	# dotnet/cli tags and sha returned by depwatcher are not the same
 	# Retrieve sha from depwatcher if we can and if we didn't specified one manually
 	if [[ -z "$DOTNET_SHA" ]]; then
+		echo "Getting SHA for Dotnet version: ${DOTNET_VERSION}"
 		get_commit_sha || true
 	fi
 
