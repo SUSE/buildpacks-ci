@@ -7,7 +7,6 @@ resources:
   source:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
-    branch: dotnet-dependencies
 <% versions.each do |version| %>
 - name: s3.dotnet-sdk-<%= version %>
   type: s3
