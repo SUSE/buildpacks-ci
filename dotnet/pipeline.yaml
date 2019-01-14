@@ -43,7 +43,6 @@ resources:
   source:
     uri: git@github.com:SUSE/cf-obs-binary-builder.git
     private_key: {{github-private-key}}
-    branch: dotnet-core
 - name: depwatcher
   type: git
   source:
