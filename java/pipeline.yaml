@@ -60,12 +60,29 @@ jobs:
       - name: out
       run:
         path: ci/buildpacks/tasks/rebase-master.sh
-- name: create-java
+- name: wait-for-git-resource
   plan:
   - aggregate:
     - get: java-buildpack-gh-release
       passed:
         - rebase-java-buildpack-against-upstream
+      trigger: true
+  - task: sleep
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/binary_builder_obs_opensuse
+      run:
+        path: sleep
+        args: [6m]
+- name: create-java
+  plan:
+  - aggregate:
+    - get: java-buildpack-gh-release
+      passed:
+        - wait-for-git-resource
       trigger: true
     - get: git.cf-java-buildpack
     - get: ci
