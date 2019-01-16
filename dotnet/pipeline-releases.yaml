@@ -1,0 +1,79 @@
+---
+<% versions = ["2.1.302", "2.1.403", "2.1.503", "2.2.100"] %>
+
+resources:
+- name: ci
+  type: git
+  source:
+    uri: git@github.com:SUSE/buildpacks-ci.git
+    private_key: {{github-private-key}}
+<% versions.each do |version| %>
+- name: s3.dotnet-sdk-<%= version %>
+  type: s3
+  source:
+    access_key_id: {{aws-access-key}}
+    secret_access_key: {{aws-secret-key}}
+    bucket: suse-buildpacks-staging/dependencies/dotnet/
+    regexp: dotnet-sdk\.(.*)\.[a-z0-9-]+\.tar\.xz
+- name: s3.dotnet-runtime-extracted-from-cli-<%= version %>
+  type: s3
+  source:
+    access_key_id: {{aws-access-key}}
+    secret_access_key: {{aws-secret-key}}
+    bucket: suse-buildpacks-staging/dependencies/dotnet/
+    regexp: dotnet-runtime\.(.*)\.[a-z0-9-]+\.tar\.xz
+- name: s3.dotnet-aspnetcore-extracted-from-cli-<%= version %>
+  type: s3
+  source:
+    access_key_id: {{aws-access-key}}
+    secret_access_key: {{aws-secret-key}}
+    bucket: suse-buildpacks-staging/dependencies/dotnet/
+    regexp: dotnet-aspnetcore\.(.*)\.[a-z0-9-]+\.tar\.xz
+- name: depwatcher
+  type: git
+  source:
+    uri: https://github.com/SUSE/cf-buildpacks-ci.git
+    private_key: {{github-private-key}}
+    paths: [dockerfiles/depwatcher]
+    branch: incorporate_env_into_depwatcher
+ <% end %>
+jobs:
+<% versions.each do |version| %>
+- name: build-dotnet-<%= version %>
+  plan:
+  - aggregate:
+    - get: ci
+    - get: depwatcher
+  - task: build
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: staging.registry.howdoi.website/splatform/rootfs-sle12
+          username: {{docker-internal-username}}
+          password: {{docker-internal-password}}
+      inputs:
+        - name: ci
+        - name: depwatcher
+      outputs:
+        - name: artifacts
+      params:
+        DOTNET_VERSION: <%= version %>
+        TERM: xterm
+        LOCAL_BUILD: "true"
+        OAUTH_AUTHORIZATION_TOKEN: {{github-access-token}}
+      run:
+        path: ci/dotnet/tasks/build.sh
+    on_success:
+      do:
+      - put: s3.dotnet-sdk-<%= version %>
+        params:
+          file: artifacts/dotnet-sdk*.tar.xz
+      - put: s3.dotnet-runtime-extracted-from-cli-<%= version %>
+        params:
+          file: artifacts/dotnet-runtime*.tar.xz
+      - put: s3.dotnet-aspnetcore-extracted-from-cli-<%= version %>
+        params:
+          file: artifacts/dotnet-aspnetcore*.tar.xz
+ <% end %>
