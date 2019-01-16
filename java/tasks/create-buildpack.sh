@@ -11,7 +11,14 @@ release_tag=${release_tag:1} # Strip the "v" from e.g. v1.7.22
 # Revision is 1 because this task is triggered by new releases only.
 # If a manually change something, we would be calling the tool manually with
 # a different revision number.
-revision=1
+
+# Make sure that the SUSE revision does not conflict with irregular patch
+# level java releases by enforcing versions with four parts
+if [ ${release_tag//[^.]} == "." ]; then
+  revision=0.1
+else
+  revision=1
+fi
 
 version="${release_tag}.${revision}"
 
