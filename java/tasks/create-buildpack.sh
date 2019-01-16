@@ -14,6 +14,8 @@ release_tag=${release_tag:1} # Strip the "v" from e.g. v1.7.22
 
 # Make sure that the SUSE revision does not conflict with irregular patch
 # level java releases by enforcing versions with four parts
+# For example if upstream releases the version 4.17 ours would be 4.17.0.1
+# If upstream releases the version 4.17.1, ours would be 4.17.1.1
 if [ ${release_tag//[^.]} == "." ]; then
   revision=0.1
 else
