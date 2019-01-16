@@ -29,12 +29,8 @@ sed -i "s|https://s3.amazonaws.com/${STAGING_BUCKET_NAME}|${PRODUCTION_BUCKET_UR
 pushd git.cf-buildpack
 source .envrc
 cp ../manifest.yml manifest.yml
-if [ -e go.mod ]; then
-   wget https://raw.githubusercontent.com/cloudfoundry/libbuildpack/master/packager/buildpack-packager/main.go -O buildpack-packager.go
-   go install buildpack-packager.go
-else
-  (cd src/${BUILDPACK}/vendor/github.com/cloudfoundry/libbuildpack/packager/buildpack-packager && go install)
-fi
+wget https://build.opensuse.org/package/binary/download/Cloud:Platform:buildpacks:build-requires/go-buildpack-packager/SLE_12_SP3/x86_64/go-buildpack-packager-0.1+git-2.1.x86_64.rpm
+rpm -i go-buildpack-packager-*.rpm
 
 if ! buildpack-packager build -cached=true -any-stack; then
   echo "buildpack-packager validation failed"
