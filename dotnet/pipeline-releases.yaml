@@ -20,22 +20,22 @@ resources:
   source:
     access_key_id: {{aws-access-key}}
     secret_access_key: {{aws-secret-key}}
-    bucket: suse-buildpacks-staging/dependencies/dotnet/
-    regexp: dotnet-sdk\.(.*)\.[a-z0-9-]+\.tar\.xz
+    bucket: suse-buildpacks-staging
+    regexp: dependencies/dotnet/dotnet-sdk\.(.*)\.[a-z0-9-]+\.tar\.xz
 - name: s3.dotnet-runtime-extracted-from-cli-<%= version %>
   type: s3
   source:
     access_key_id: {{aws-access-key}}
     secret_access_key: {{aws-secret-key}}
-    bucket: suse-buildpacks-staging/dependencies/dotnet/
-    regexp: dotnet-runtime\.(.*)\.[a-z0-9-]+\.tar\.xz
+    bucket: suse-buildpacks-staging
+    regexp: dependencies/dotnet/dotnet-runtime\.(.*)\.[a-z0-9-]+\.tar\.xz
 - name: s3.dotnet-aspnetcore-extracted-from-cli-<%= version %>
   type: s3
   source:
     access_key_id: {{aws-access-key}}
     secret_access_key: {{aws-secret-key}}
-    bucket: suse-buildpacks-staging/dependencies/dotnet/
-    regexp: dotnet-aspnetcore\.(.*)\.[a-z0-9-]+\.tar\.xz
+    bucket: suse-buildpacks-staging
+    regexp: dependencies/dotnet/dotnet-aspnetcore\.(.*)\.[a-z0-9-]+\.tar\.xz
  <% end %>
 jobs:
 <% versions.each do |version| %>
