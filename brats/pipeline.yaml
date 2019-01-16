@@ -103,6 +103,7 @@ jobs:
       outputs:
         - name: mail-output
       params:
+        BUILDPACK: <%= buildpack %>
         TEST_SUITE: brats
         PROXY_SCHEME: {{brats-proxy-scheme}}
         PROXY_PORT: {{brats-proxy-port}}
@@ -174,6 +175,7 @@ jobs:
       outputs:
         - name: mail-output
       params:
+        BUILDPACK: <%= buildpack %>
         TEST_SUITE: integration
         PROXY_SCHEME: {{brats-proxy-scheme}}
         PROXY_PORT: {{brats-proxy-port}}
