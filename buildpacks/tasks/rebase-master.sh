@@ -46,12 +46,17 @@ pushd git.cf-buildpack
   # Create a commit for remaining SUSE changes
   if ! git diff --no-ext-diff --quiet; then
     git commit -a -m "Currently required SUSE changes"
+    SUSE_COMMIT=$(git rev-parse HEAD)
   fi
 
   # Rebase against upstream
   git remote add upstream https://github.com/cloudfoundry/${BUILDPACK}-buildpack.git
   git fetch upstream --tags
-  git rebase v${UPSTREAM_VERSION}
+  git reset --hard v${UPSTREAM_VERSION}
+
+  if [ -n "$SUSE_COMMIT" ]; then
+    git cherry-pick $SUSE_COMMIT
+  fi
 
   # Make sure that our fork has the same tags as upstream
   git push origin --tags
