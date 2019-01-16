@@ -7,6 +7,13 @@ resources:
   source:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
+- name: depwatcher
+  type: git
+  source:
+    uri: https://github.com/SUSE/cf-buildpacks-ci.git
+    private_key: {{github-private-key}}
+    paths: [dockerfiles/depwatcher]
+    branch: incorporate_env_into_depwatcher
 <% versions.each do |version| %>
 - name: s3.dotnet-sdk-<%= version %>
   type: s3
@@ -29,13 +36,6 @@ resources:
     secret_access_key: {{aws-secret-key}}
     bucket: suse-buildpacks-staging/dependencies/dotnet/
     regexp: dotnet-aspnetcore\.(.*)\.[a-z0-9-]+\.tar\.xz
-- name: depwatcher
-  type: git
-  source:
-    uri: https://github.com/SUSE/cf-buildpacks-ci.git
-    private_key: {{github-private-key}}
-    paths: [dockerfiles/depwatcher]
-    branch: incorporate_env_into_depwatcher
  <% end %>
 jobs:
 <% versions.each do |version| %>
