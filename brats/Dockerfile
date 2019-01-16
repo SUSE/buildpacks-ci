@@ -2,7 +2,13 @@
 FROM opensuse/leap:15.0
 
 RUN zypper ar https://download.opensuse.org/repositories/devel:/languages:/go/openSUSE_Leap_15.0/ go
+RUN zypper ar https://download.opensuse.org/repositories/Cloud:/Platform:/buildpacks:/build-requires/openSUSE_Leap_15.0/ buildpacks-build-requires
+RUN zypper --gpg-auto-import-keys -n in go-buildpack-packager
 RUN zypper --gpg-auto-import-keys -n in go
+
+# Needed for integration tests
+RUN zypper in -y chromedriver
+ENV PATH $PATH:/usr/lib64/chromium
 
 # Store github.com ssh public key
 RUN mkdir -p ~/.ssh

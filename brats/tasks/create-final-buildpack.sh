@@ -29,8 +29,6 @@ sed -i "s|https://s3.amazonaws.com/${STAGING_BUCKET_NAME}|${PRODUCTION_BUCKET_UR
 pushd git.cf-buildpack
 source .envrc
 cp ../manifest.yml manifest.yml
-wget https://download.opensuse.org/repositories/Cloud:/Platform:/buildpacks:/build-requires/openSUSE_Leap_15.0/x86_64/go-buildpack-packager-0.1+git-lp150.2.1.x86_64.rpm
-rpm -i go-buildpack-packager-*.rpm
 
 if ! buildpack-packager build -cached=true -any-stack; then
   echo "buildpack-packager validation failed"

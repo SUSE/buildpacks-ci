@@ -2,9 +2,6 @@
 
 set -e -o pipefail
 
-zypper in -y chromedriver
-export PATH=$PATH:/usr/lib64/chromium
-
 echo "[CI] ${BUILDPACK} ${TEST_SUITE} tests have failed" > mail-output/subject-failed.txt
 
 source ci/brats/tasks/cf_login.sh 2>&1 | tee mail-output/body-failed.txt
