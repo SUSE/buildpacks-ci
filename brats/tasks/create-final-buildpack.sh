@@ -16,7 +16,9 @@ end
 EOF
 `
 
+echo "Copying dependencies from staging to production bucket"
 for url in ${staging_urls}; do
+  echo ">> Copying ${url} to ${PRODUCTION_BUCKET_NAME}"
   aws s3 cp ${url} ${url/${STAGING_BUCKET_NAME}/${PRODUCTION_BUCKET_NAME}}
 done
 
