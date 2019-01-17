@@ -100,7 +100,7 @@ if [ "$BUILD" = true ]; then
 		git clone https://github.com/dotnet/cli git.dotnet-cli
 		pushd git.dotnet-cli
 			echo "Trying to checkout Dotnet version: ${DOTNET_VERSION}"
-			git checkout $DOTNET_VERSION || true
+			git checkout v${DOTNET_VERSION} || true
 		popd
  	fi
 
