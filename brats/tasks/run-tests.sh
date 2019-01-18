@@ -2,6 +2,14 @@
 
 set -e -o pipefail
 
+
+zypper rm -y chromedriver
+zypper in -y gconf2 liberation-fonts
+wget -O chromedriver.zip 'https://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip'
+[ e42a55f9e28c3b545ef7c7727a2b4218c37489b4282e88903e4470e92bc1d967 = "$(shasum -a 256 chromedriver.zip | cut -d' ' -f1)" ]
+unzip chromedriver.zip -d /usr/local/bin/
+rm chromedriver.zip
+
 echo "[CI] ${BUILDPACK} ${TEST_SUITE} tests have failed" > mail-output/subject-failed.txt
 
 source ci/brats/tasks/cf_login.sh 2>&1 | tee mail-output/body-failed.txt
