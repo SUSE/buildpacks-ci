@@ -9,10 +9,10 @@ DOTNET_BUNDLE_URL="${DOTNET_BUNDLE_URL:-https://dotnetcli.azureedge.net/dotnet/S
 LOCAL_BUILD="${LOCAL_BUILD:-false}"
 DOTNET_SHA="${DOTNET_SHA:-}"
 
-if [[ ! -z "$DOTNET_VERSION" ]]; then
+if [[ -z "$DOTNET_VERSION" ]]; then
 	release_tag=$(cat $ROOTDIR/buildpack-gh-release/tag)
 	DOTNET_VERSION=$($ROOTDIR/ci/dotnet/tasks/compare_manifests ${release_tag})
-	[[ ! -z "$DOTNET_VERSION" ]] && DOTNET_VERSION="$(cat dotnet-core-buildpack-gh-release/body | grep 'Add dotnet-sdk' | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')"
+	[[ -z "$DOTNET_VERSION" ]] && DOTNET_VERSION="$(cat dotnet-core-buildpack-gh-release/body | grep 'Add dotnet-sdk' | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')"
 fi
 
 OS="$(uname | tr '[:upper:]' '[:lower:]')"
@@ -23,16 +23,13 @@ export DropSuffix="true"
 function get_commit_sha() {
 	local version=$1
 	# Get crystal to build depwatcher
-	curl -H "Authorization: token ${OAUTH_AUTHORIZATION_TOKEN}" -s https://api.github.com/repos/crystal-lang/crystal/releases/latest | grep "browser_download_url.*linux-x86_64" | cut -d : -f 2,3 | tr -d '""' | wget -i - -O crystal-latest.tar.gz
+	curl -H "Authorization: token ${OAUTH_AUTHORIZATION_TOKEN}" -s https://api.github.com/repos/crystal-lang/crystal/releases/latest | grep "browser_download_url.*linux-x86_64" | cut -d : -f 2,3 | tr -d '""' | wget -q -i - -O crystal-latest.tar.gz
 	tar -xf crystal-latest.tar.gz
 	rm -rf crystal-latest.tar.gz
 
-	pushd crystal-*
-		[ ! -e "/usr/local/bin/crystal" ] && ln -s $(pwd)/bin/crystal /usr/local/bin/crystal
-		[ ! -e "/usr/local/bin/shards" ] && ln -s $(pwd)/bin/shards /usr/local/bin/shards
-	popd
+	[ ! -e "/usr/local/bin/crystal" ] && ln -s $(pwd)/crystal-*/bin/crystal /usr/local/bin/crystal
+	[ ! -e "/usr/local/bin/shards" ] && ln -s $(pwd)/crystal-*/bin/shards /usr/local/bin/shards
 
-	echo "Compiling depwatcher"
 	crystal build $ROOTDIR/depwatcher/dockerfiles/depwatcher/src/in.cr -o /usr/bin/depwatcher
 	chmod +x /usr/bin/depwatcher
 

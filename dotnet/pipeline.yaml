@@ -55,6 +55,7 @@ jobs:
   - aggregate:
     - get: ci
     - get: dotnet-core-buildpack-gh-release
+      trigger: true
     - get: depwatcher
   - task: build
     config:
@@ -93,6 +94,8 @@ jobs:
   - aggregate:
     - get: dotnet-core-buildpack-gh-release
       trigger: true
+      passed:
+        - build-dotnet-dependencies-from-release
     - get: git.cf-dotnet-core-buildpack
     - get: ci
   - task: rebase-against-upstream
@@ -162,7 +165,6 @@ jobs:
   - aggregate:
     - get: dotnet-core-buildpack-gh-release
       passed:
-        - rebase-dotnet-buildpack-against-upstream
         - add-missing-dotnet-core-obs-dependencies
       trigger: true
     - get: ci
