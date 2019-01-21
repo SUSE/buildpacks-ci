@@ -3,14 +3,17 @@ set -e
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 ROOTDIR=$DIR/../../../
-
-DOTNET_VERSION="${DOTNET_VERSION:-$(cat dotnet-core-buildpack-gh-release/body | grep 'Add dotnet-sdk' | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')}"
-#DOTNET_VERSION="${DOTNET_VERSION:-2.2.100}"
 STACK="${STACK:-sle12}"
 BUILD="${BUILD:-true}"
 DOTNET_BUNDLE_URL="${DOTNET_BUNDLE_URL:-https://dotnetcli.azureedge.net/dotnet/Sdk/$DOTNET_VERSION/dotnet-sdk-$DOTNET_VERSION-linux-x64.tar.gz}"
 LOCAL_BUILD="${LOCAL_BUILD:-false}"
 DOTNET_SHA="${DOTNET_SHA:-}"
+
+if [[ ! -z "$DOTNET_VERSION" ]]; then
+	release_tag=$(cat $ROOTDIR/buildpack-gh-release/tag)
+	DOTNET_VERSION=$($ROOTDIR/ci/dotnet/tasks/compare_manifests ${release_tag})
+	[[ ! -z "$DOTNET_VERSION" ]] && DOTNET_VERSION="$(cat dotnet-core-buildpack-gh-release/body | grep 'Add dotnet-sdk' | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')"
+fi
 
 OS="$(uname | tr '[:upper:]' '[:lower:]')"
 
@@ -18,6 +21,7 @@ export TERM="linux"
 export DropSuffix="true"
 
 function get_commit_sha() {
+	local version=$1
 	# Get crystal to build depwatcher
 	curl -H "Authorization: token ${OAUTH_AUTHORIZATION_TOKEN}" -s https://api.github.com/repos/crystal-lang/crystal/releases/latest | grep "browser_download_url.*linux-x86_64" | cut -d : -f 2,3 | tr -d '""' | wget -i - -O crystal-latest.tar.gz
 	tar -xf crystal-latest.tar.gz
@@ -33,21 +37,47 @@ function get_commit_sha() {
 	chmod +x /usr/bin/depwatcher
 
 	# FIXME: Do we need version_filter? https://www.pivotaltracker.com/n/projects/1042066/stories/162580717
-	DOTNET_SHA=$(echo '{"source":{"name":"dotnet-sdk","type":"dotnet-sdk", "tag_regex": "^(v1\\.\\d+\\.\\d+|v2\\.\\d+\\.\\d+\\+dependencies)$" }, "version":{"ref":"'$DOTNET_VERSION'", "url": "https://github.com/dotnet/cli"}}' | /usr/bin/depwatcher /tmp 2>&1 | grep 'sha' | jq -r '.git_commit_sha')
+	echo $(echo '{"source":{"name":"dotnet-sdk","type":"dotnet-sdk", "tag_regex": "^(v1\\.\\d+\\.\\d+|v2\\.\\d+\\.\\d+\\+dependencies)$" }, "version":{"ref":"'$version'", "url": "https://github.com/dotnet/cli"}}' | /usr/bin/depwatcher /tmp 2>&1 | grep 'sha' | jq -r '.git_commit_sha')
 }
 
 function build() {
-	echo "Building dotnet $DOTNET_VERSION for $STACK stack"
+	local version=$1
+	local sha=$2
+	local out=$3
+
+	if [ "$LOCAL_BUILD" = true ]; then
+		[ ! -d "git.dotnet-cli" ] && git clone https://github.com/dotnet/cli git.dotnet-cli
+		pushd git.dotnet-cli
+			echo "Trying to checkout Dotnet version: ${version}"
+			git checkout v${version} || true
+		popd
+	fi
+
+	# dotnet/cli tags and sha returned by depwatcher are not the same
+	# Retrieve sha from depwatcher if we can and if we didn't specified one manually
+	if [[ -z "$sha" ]]; then
+		echo "Getting SHA for Dotnet version: ${version}"
+		sha=$(get_commit_sha ${version}) || true
+	fi
+
+	if [[ ! -z "$sha" ]]; then
+		echo "Checking out SHA (from depwatcher) $sha"
+		pushd git.dotnet-cli
+			git checkout $sha
+		popd
+	fi
+
+	echo "Building dotnet $version for $STACK stack in $out"
 	pushd git.dotnet-cli
 
 		# See https://github.com/cloudfoundry/buildpacks-ci/blob/2506ca13addb599c4fda9aaa68d5ba8586e3f40d/tasks/build-binary-new/builder.rb#L177
 		regex_extract_version="([0-9]+)\.([0-9]+)\.([0-9]+)"
-		if [[ $DOTNET_VERSION =~ $regex_extract_version ]]
+		if [[ $version =~ $regex_extract_version ]]
 		then
 			MAJOR="${BASH_REMATCH[1]}"
 			MINOR="${BASH_REMATCH[2]}"
 			PATCH="${BASH_REMATCH[3]}"
-			echo "Major :$MAJOR"
+			echo "Major: $MAJOR"
 			echo "Minor: $MINOR"
 			echo "PATCH ver: $PATCH"
 
@@ -84,50 +114,38 @@ function build() {
 		# NOTE: To run a full build, including of self-tests: bash run-build.sh
 
 		# Handles: https://github.com/cloudfoundry/buildpacks-ci/blob/2506ca13addb599c4fda9aaa68d5ba8586e3f40d/tasks/build-binary-new/builder.rb#L190
-		[ -d "artifacts/${OS}-x64/stage2" ] && mv artifacts/${OS}-x64/stage2 ../cli-build
-		[ -d "bin/2/${OS}-x64/dotnet" ] && mv bin/2/${OS}-x64/dotnet ../cli-build
+		[ -d "artifacts/${OS}-x64/stage2" ] && mv artifacts/${OS}-x64/stage2 ${out}
+		[ -d "bin/2/${OS}-x64/dotnet" ] && mv bin/2/${OS}-x64/dotnet ${out}
 	popd
 }
 
 if [[ -z "${DOTNET_VERSION}" ]]; then
-	echo "No DOTNET_VERSION specified"
-	exit 1
+	echo "No DOTNET_VERSION specified or to build"
+	exit 0
 fi
 
 if [ "$BUILD" = true ]; then
+	for i in "${DOTNET_VERSION[@]}"
+	do
+		echo "Building dotnet version: ${i}"
+		build "${i}" "${DOTNET_SHA}" "${ROOTDIR}/${i}-build"
+		# Extract dependencies from sdk and build separate dependencies
+		ruby ${ROOTDIR}/ci/dotnet/tasks/extractor.rb ${STACK} ${i} "${ROOTDIR}/${i}-build"
 
-	if [ "$LOCAL_BUILD" = true ] && [ ! -d "git.dotnet-cli" ]; then
-		git clone https://github.com/dotnet/cli git.dotnet-cli
-		pushd git.dotnet-cli
-			echo "Trying to checkout Dotnet version: ${DOTNET_VERSION}"
-			git checkout v${DOTNET_VERSION} || true
-		popd
- 	fi
-
-	# dotnet/cli tags and sha returned by depwatcher are not the same
-	# Retrieve sha from depwatcher if we can and if we didn't specified one manually
-	if [[ -z "$DOTNET_SHA" ]]; then
-		echo "Getting SHA for Dotnet version: ${DOTNET_VERSION}"
-		get_commit_sha || true
-	fi
-
-	if [[ ! -z "$DOTNET_SHA" ]]; then
-		echo "Checking out SHA $DOTNET_SHA"
-		pushd git.dotnet-cli
-			git checkout $DOTNET_SHA
-		popd
-	fi
-
-	build
+		[ ! -d "artifacts" ] && mkdir -p artifacts
+		mv *.tar.xz artifacts
+	done
 else
+
 	TARBALL="$(basename $DOTNET_BUNDLE_URL)"
 	[ ! -f "$TARBALL" ] && curl $DOTNET_BUNDLE_URL --output $TARBALL
 	[ ! -d "cli-build" ] && mkdir cli-build
 	tar xf $TARBALL -C cli-build
+	# Extract dependencies from sdk and build separate dependencies
+	ruby ci/dotnet/tasks/extractor.rb ${STACK} ${DOTNET_VERSION} cli-build
+
+	[ ! -d "artifacts" ] && mkdir -p artifacts
+	mv *.tar.xz artifacts
+
 fi
 
-# Extract dependencies from sdk and build separate dependencies
-ruby ci/dotnet/tasks/extractor.rb ${STACK} ${DOTNET_VERSION} cli-build
-
-[ ! -d "artifacts" ] && mkdir -p artifacts
-mv *.tar.xz artifacts
