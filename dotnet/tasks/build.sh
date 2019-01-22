@@ -131,7 +131,20 @@ if [ "$BUILD" = true ]; then
 
 		[ ! -d "artifacts" ] && mkdir -p artifacts
 		mv *.tar.xz artifacts
+
+		mkdir -p "${ROOTDIR}"/"${i}"-src/
+
+		for s in "${ROOTDIR}/git.dotnet-cli/.dotnet_stage0" "$HOME/.dotnet" "$HOME/.nuget" "$HOME/.local/share/NuGet";
+		do
+			mv "${s}" "${ROOTDIR}"/"${i}"-src/
+		done
+
+		mv "${ROOTDIR}/git.dotnet-cli" "${ROOTDIR}"/"${i}"-src/source
+		pushd "${ROOTDIR}"/"${i}"-src/
+			tar cfJ ${ROOTDIR}/artifacts/dotnet-cli-"${i}"-src.tar.xz *
+		popd
 	done
+	ls -liah artifacts/
 else
 
 	TARBALL="$(basename $DOTNET_BUNDLE_URL)"
