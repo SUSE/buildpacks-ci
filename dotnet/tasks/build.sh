@@ -129,17 +129,26 @@ if [ "$BUILD" = true ]; then
 		# Extract dependencies from sdk and build separate dependencies
 		ruby ${ROOTDIR}/ci/dotnet/tasks/extractor.rb ${STACK} ${i} "${ROOTDIR}/${i}-build"
 
-		[ ! -d "artifacts" ] && mkdir -p artifacts
-		mv *.tar.xz artifacts
+		[ ! -d "${ROOTDIR}/artifacts" ] && mkdir -p "${ROOTDIR}"/artifacts
+		mv *.tar.xz "${ROOTDIR}"/artifacts
 
-		mkdir -p "${ROOTDIR}"/"${i}"-src/
+		mkdir -p "${ROOTDIR}"/"${i}"-src/tmp
+		mkdir -p "${ROOTDIR}"/"${i}"-src/cache
+		
+		mv "${ROOTDIR}/git.dotnet-cli" "${ROOTDIR}"/"${i}"-src/source
+
+		# Get temp files 
+		for s in "/tmp/.*.cs" "/tmp/VBCSCompiler";
+		do
+			# Best effort, as aren't necessary files left there.
+			mv "${s}" "${ROOTDIR}"/"${i}"-src/tmp/ || true
+		done
 
 		for s in "${ROOTDIR}/git.dotnet-cli/.dotnet_stage0" "$HOME/.dotnet" "$HOME/.nuget" "$HOME/.local/share/NuGet";
 		do
-			mv "${s}" "${ROOTDIR}"/"${i}"-src/
+			mv "${s}" "${ROOTDIR}"/"${i}"-src/cache/
 		done
 
-		mv "${ROOTDIR}/git.dotnet-cli" "${ROOTDIR}"/"${i}"-src/source
 		pushd "${ROOTDIR}"/"${i}"-src/
 			tar cfJ ${ROOTDIR}/artifacts/dotnet-cli-"${i}"-src.tar.xz *
 		popd
