@@ -272,6 +272,29 @@ jobs:
         - name: git.cf-buildpack
       run:
         path: ci/brats/tasks/add-manifest-and-tag.sh
+- name: test-offline-<%= buildpack %>-buildpack-creation
+  plan:
+  - get: s3.cf-buildpacks.suse.com-<%= buildpack %>
+    trigger: true
+    passed:
+    - add-manifest-and-tag-<%= buildpack %>-buildpack
+  - task: run-offline-buildpack-packager
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/cf-buildpack-packager
+      run:
+        path: bash
+        args:
+          - "-c"
+          - mkdir /out && /package --accept-external-binaries SUSE <%= buildpack %> ''  {{brats-cf-stack}}
+    on_failure:
+      put: email.suse
+      params:
+        subject_text: "Offline <%= buildpack %> buildpack could not be created"
+        body_text: "Building the offline buildpack with our packager failed. Check Concourse for the results."
 - name: update-<%= buildpack %>-buildpack-release
   plan:
   - aggregate:
@@ -280,7 +303,7 @@ jobs:
     - get: s3.cf-buildpacks.suse.com-<%= buildpack %>
       trigger: true
       passed:
-      - add-manifest-and-tag-<%= buildpack %>-buildpack
+      - test-offline-<%= buildpack %>-buildpack-creation
   - task: trigger-final-releases-pipeline
     input_mapping:
       git.cf-buildpack-release: git.cf-<%= buildpack %>-buildpack-release

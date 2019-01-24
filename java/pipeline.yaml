@@ -1,5 +1,23 @@
 ---
+resource_types:
+- name: email
+  type: docker-image
+  source:
+    repository: pcfseceng/email-resource
+
 resources:
+- name: email.suse
+  type: email
+  source:
+    smtp:
+      anonymous: true
+      host: {{notification-imap-alternate-host}}
+      port: {{notification-imap-alternate-port}}
+      ca_cert: |
+        ((notification-ca-cert))
+    from: {{notification-from}}
+    to:
+      - {{notification-to}}
 - name: ci
   type: git
   source:
@@ -144,6 +162,29 @@ jobs:
         - name: git.cf-buildpack
       run:
         path: ci/brats/tasks/add-manifest-and-tag.sh
+- name: test-offline-java-buildpack-creation
+  plan:
+  - get: s3.cf-buildpacks.suse.com
+    trigger: true
+    passed:
+    - add-manifest-and-tag-java-buildpack
+  - task: run-offline-buildpacker
+    config:
+      platform: linux
+      image_resource:
+        type: docker-image
+        source:
+          repository: splatform/cf-buildpack-packager
+      run:
+        path: bash
+        args:
+          - "-c"
+          - mkdir /out && /package --accept-external-binaries SUSE java ''  {{brats-cf-stack}}
+    on_failure:
+      put: email.suse
+      params:
+        subject_text: "Offline Java buildpack could not be created"
+        body_text: "Building the offline buildpack with our packager failed. Check Concourse for the results."
 - name: update-java-buildpack-release
   plan:
   - aggregate:
@@ -152,7 +193,7 @@ jobs:
     - get: s3.cf-buildpacks.suse.com
       trigger: true
       passed:
-      - add-manifest-and-tag-java-buildpack
+      - test-offline-java-buildpack-creation
   - task: trigger-final-releases-pipeline
     input_mapping:
       git.cf-buildpack-release: git.cf-java-buildpack-release
