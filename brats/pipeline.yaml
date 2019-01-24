@@ -17,7 +17,8 @@ resources:
       ca_cert: |
         ((notification-ca-cert))
     from: {{notification-from}}
-    to: [ {{notification-to}} ]
+    to:
+      - {{notification-to}}
 - name: ci
   type: git
   source:
