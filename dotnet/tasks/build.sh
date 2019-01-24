@@ -144,7 +144,7 @@ if [ "$BUILD" = true ]; then
 			mv "${s}" "${ROOTDIR}"/"${i}"-src/tmp/ || true
 		done
 
-		for s in "${ROOTDIR}/git.dotnet-cli/.dotnet_stage0" "$HOME/.dotnet" "$HOME/.nuget" "$HOME/.local/share/NuGet";
+		for s in "${ROOTDIR}/${i}-src/source/.dotnet_stage0" "$HOME/.dotnet" "$HOME/.nuget" "$HOME/.local/share/NuGet";
 		do
 			mv "${s}" "${ROOTDIR}"/"${i}"-src/cache/
 		done

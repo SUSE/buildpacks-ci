@@ -21,7 +21,7 @@ pip install awscli --upgrade --user
 
 # Get all the dotnet deps we have generated so far, different buildpacks versions
 # could consume different components
-~/.local/bin/aws s3 cp s3://${STAGING_BUILDPACKS_BUCKET}/dependencies/dotnet dotnet-deps --recursive
+~/.local/bin/aws s3 cp s3://${STAGING_BUILDPACKS_BUCKET}/dependencies/dotnet dotnet-deps --recursive --exclude "dotnet-cli-*"
 
 echo "Buildpack ${BUILDPACK} could not be created" > ${ROOTDIR}/out/failure_email_notification_subject
 
