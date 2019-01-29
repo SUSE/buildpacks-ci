@@ -16,34 +16,6 @@ resources:
   source:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
-- name: s3.dotnet-sdk
-  type: s3
-  source:
-   access_key_id: {{aws-access-key}}
-   secret_access_key: {{aws-secret-key}}
-   bucket: suse-buildpacks-staging
-   regexp: dependencies/dotnet/dotnet-sdk\.(.*)\.[a-z0-9-]+\.tar\.xz
-- name: s3.dotnet-runtime-extracted-from-cli
-  type: s3
-  source:
-   access_key_id: {{aws-access-key}}
-   secret_access_key: {{aws-secret-key}}
-   bucket: suse-buildpacks-staging
-   regexp: dependencies/dotnet/dotnet-runtime\.(.*)\.[a-z0-9-]+\.tar\.xz
-- name: s3.dotnet-aspnetcore-extracted-from-cli
-  type: s3
-  source:
-   access_key_id: {{aws-access-key}}
-   secret_access_key: {{aws-secret-key}}
-   bucket: suse-buildpacks-staging
-   regexp: dependencies/dotnet/dotnet-aspnetcore\.(.*)\.[a-z0-9-]+\.tar\.xz
-- name: s3.dotnet-cli-sources
-  type: s3
-  source:
-    access_key_id: {{aws-access-key}}
-    secret_access_key: {{aws-secret-key}}
-    bucket: suse-buildpacks-staging
-    regexp: dependencies/dotnet/dotnet-cli-(.*)-src\.tar\.xz
 - name: cf-obs-binary-builder
   type: git
   source:
@@ -83,22 +55,12 @@ jobs:
         TERM: xterm
         OAUTH_AUTHORIZATION_TOKEN: {{github-access-token}}
         LOCAL_BUILD: "true"
+        AWS_ACCESS_KEY_ID: {{aws-access-key}}
+        AWS_SECRET_ACCESS_KEY: {{aws-secret-key}}
+        AWS_DEFAULT_REGION: us-east-1
+        STAGING_BUILDPACKS_BUCKET: {{s3-staging-buildpacks-bucket}}
       run:
         path: ci/dotnet/tasks/build.sh
-    on_success:
-       do:
-       - put: s3.dotnet-sdk
-         params:
-           file: artifacts/dotnet-sdk*.tar.xz
-       - put: s3.dotnet-runtime-extracted-from-cli
-         params:
-           file: artifacts/dotnet-runtime*.tar.xz
-       - put: s3.dotnet-aspnetcore-extracted-from-cli
-         params:
-           file: artifacts/dotnet-aspnetcore*.tar.xz
-       - put: s3.dotnet-cli-sources
-         params:
-           file: artifacts/dotnet-cli-*-src.tar.xz
   - task: push-dotnet-cli-sources-to-obs
     config:
       platform: linux

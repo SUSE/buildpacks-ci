@@ -32,7 +32,7 @@ pushd git.cf-buildpack
     echo "No supported version file found!"
     exit 1
   fi
-  CURRENT_VERSION=$(grep -oE '[[:digit:]]+(\.[[:digit:]]+)*' $VERSION_FILE | perl -pe 's/.*?([0-9]+(\.[0-9]+)*\.[0-9]+)/\1/')
+  CURRENT_VERSION=$(grep -oE '[[:digit:]]+\.[[:digit:]]+(\.[[:digit:]]+)*' $VERSION_FILE | perl -pe 's/.*?([0-9]+(\.[0-9]+)*)\.[0-9]+/\1/')
 
   git reset v${CURRENT_VERSION}
 

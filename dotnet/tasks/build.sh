@@ -168,3 +168,7 @@ else
 
 fi
 
+pushd ${ROOTDIR}/artifacts
+for a in $(ls); do
+	aws s3 cp "${a}" s3://${STAGING_BUILDPACKS_BUCKET}/dependencies/dotnet
+done

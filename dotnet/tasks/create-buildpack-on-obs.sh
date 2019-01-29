@@ -23,18 +23,26 @@ pip install awscli --upgrade --user
 # could consume different components
 ~/.local/bin/aws s3 cp s3://${STAGING_BUILDPACKS_BUCKET}/dependencies/dotnet dotnet-deps --recursive --exclude "dotnet-cli-*"
 
-echo "Buildpack ${BUILDPACK} could not be created" > ${ROOTDIR}/out/failure_email_notification_subject
 
-DEPDIR=${ROOTDIR}/dotnet-deps ${ROOTDIR}/cf-obs-binary-builder/bin/cf_obs_binary_builder \
-       buildpack ${BUILDPACK} ${release_tag} ${revision} \
-       2>&1 | tee ${ROOTDIR}/out/failure_email_notification_body
+for i in $(seq 1 ${NUMBER_OF_RETRIES}); do
+  echo "Buildpack ${BUILDPACK} could not be created" > ${ROOTDIR}/out/failure_email_notification_subject
 
-exit_status=${PIPESTATUS[0]}
+  DEPDIR=${ROOTDIR}/dotnet-deps ${ROOTDIR}/cf-obs-binary-builder/bin/cf_obs_binary_builder \
+        buildpack ${BUILDPACK} ${release_tag} ${revision} \
+        2>&1 | tee ${ROOTDIR}/out/failure_email_notification_body
 
-echo "exit status: ${exit_status}"
+  exit_status=${PIPESTATUS[0]}
 
-if [ ${exit_status} -eq 1 ]; then
-  exit 1
-else
-  exit 0
-fi
+  echo "exit status: ${exit_status}"
+
+  if [ ${exit_status} -eq 2 ]; then
+    echo "Retrying in ${WAITING_TIME_SECS}..."
+    sleep $WAITING_TIME_SECS
+  elif [ ${exit_status} -eq 1 ]; then
+    exit 1
+  else
+    exit 0
+  fi
+done
+
+exit 1
