@@ -10,7 +10,7 @@ LOCAL_BUILD="${LOCAL_BUILD:-false}"
 DOTNET_SHA="${DOTNET_SHA:-}"
 
 if [[ -z "$DOTNET_VERSION" ]]; then
-	release_tag=$(cat $ROOTDIR/buildpack-gh-release/tag)
+	release_tag=$(cat $ROOTDIR/dotnet-core-buildpack-gh-release/tag)
 	DOTNET_VERSION=$($ROOTDIR/ci/dotnet/tasks/compare_manifests ${release_tag})
 	[[ -z "$DOTNET_VERSION" ]] && DOTNET_VERSION="$(cat dotnet-core-buildpack-gh-release/body | grep 'Add dotnet-sdk' | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')"
 fi
