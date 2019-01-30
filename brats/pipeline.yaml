@@ -1,5 +1,6 @@
 ---
 <% buildpacks = ["ruby", "go", "python", "php", "nodejs", "staticfile", "nginx", "binary", "dotnet-core"] %>
+<% integration_tests = ["nginx", "binary"] %>
 resource_types:
 - name: email
   type: docker-image
@@ -206,7 +207,11 @@ jobs:
     - get: s3.suse-buildpacks-staging-<%= buildpack %>
       trigger: true
       passed:
+      <% if integration_tests.include?(buildpack) %>
+      - run-<%= buildpack %>-integration-tests
+      <% else %>
       - run-<%= buildpack %>-brats
+      <% end %>
     - get: ci
     - get: git.cf-<%= buildpack %>-buildpack
   - task: create-final-buildpack
