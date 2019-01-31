@@ -89,6 +89,7 @@ jobs:
         subject_text: "BRATS cleanup failed"
         body_text: "There was a problem cleaning up the BRATS cluster. BRATS could not be run!"
   - task: run-tests
+    privileged: true
     input_mapping:
       git.cf-buildpack: git.cf-<%= buildpack %>-buildpack
       s3.suse-buildpacks-staging: s3.suse-buildpacks-staging-<%= buildpack %>
