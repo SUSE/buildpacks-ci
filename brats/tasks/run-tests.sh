@@ -2,7 +2,6 @@
 
 set -e -o pipefail
 
-
 zypper rm -y chromedriver
 zypper in -y gconf2 liberation-fonts
 wget -O chromedriver.zip 'https://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip'
@@ -35,6 +34,14 @@ fi
 if [ "${TEST_SUITE}" == "brats" ]; then
   scripts/${TEST_SUITE}.sh 2>&1 | tee ../mail-output/body-failed.txt
 else
+  # Integration tests need access to the staging registry to fetch the sle12 stack
+  docker login \
+    -u $STAGING_DOCKER_REGISTRY_USERNAME \
+    -p $STAGING_DOCKER_REGISTRY_PASSWORD $STAGING_DOCKER_REGISTRY
+
+  # https://github.com/cloudfoundry/libbuildpack/pull/24/files
+  export CF_STACK_DOCKER_IMAGE=$STAGING_DOCKER_REGISTRY/splatform/rootfs-$CF_STACK
+
   # Do not fail on integration tests at the moment
   scripts/${TEST_SUITE}.sh 2>&1 | tee ../mail-output/body-failed.txt
 fi

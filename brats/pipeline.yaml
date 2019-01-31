@@ -179,6 +179,9 @@ jobs:
       params:
         BUILDPACK: <%= buildpack %>
         TEST_SUITE: integration
+        STAGING_DOCKER_REGISTRY: {{docker-internal-registry}}
+        STAGING_DOCKER_REGISTRY_USERNAME: {{docker-internal-username}}
+        STAGING_DOCKER_REGISTRY_PASSWORD: {{docker-internal-password}}
         PROXY_SCHEME: {{brats-proxy-scheme}}
         PROXY_PORT: {{brats-proxy-port}}
         PROXY_USERNAME: {{brats-proxy-username}}
