@@ -2,6 +2,8 @@
 
 set -e -o pipefail
 
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
 zypper rm -y chromedriver
 zypper in -y gconf2 liberation-fonts
 wget -O chromedriver.zip 'https://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip'
@@ -34,13 +36,25 @@ fi
 if [ "${TEST_SUITE}" == "brats" ]; then
   scripts/${TEST_SUITE}.sh 2>&1 | tee ../mail-output/body-failed.txt
 else
+  # https://github.com/cloudfoundry/libbuildpack/pull/24/files
+  export CF_STACK_DOCKER_IMAGE=$STAGING_DOCKER_REGISTRY/splatform/rootfs-$CF_STACK
+
+  # Mount cgroups to be able to call docker in docker
+  echo "Setup CGroups"
+  source $SCRIPT_DIR/helpers.sh
+  permit_device_control
+
+  echo "Starting docker daemon"
+  # Start docker daemon and wait until it's up
+  dockerd &> /dev/null &
+  sleep 10 # Give dockerd enough time to start
+  docker version
+  echo "Docker is up and running!"
+
   # Integration tests need access to the staging registry to fetch the sle12 stack
   docker login \
     -u $STAGING_DOCKER_REGISTRY_USERNAME \
     -p $STAGING_DOCKER_REGISTRY_PASSWORD $STAGING_DOCKER_REGISTRY
-
-  # https://github.com/cloudfoundry/libbuildpack/pull/24/files
-  export CF_STACK_DOCKER_IMAGE=$STAGING_DOCKER_REGISTRY/splatform/rootfs-$CF_STACK
 
   # Do not fail on integration tests at the moment
   scripts/${TEST_SUITE}.sh 2>&1 | tee ../mail-output/body-failed.txt
