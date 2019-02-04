@@ -149,9 +149,10 @@ if [ "$BUILD" = true ]; then
 			mv "${s}" "${ROOTDIR}"/"${i}"-src/cache/
 		done
 
-		pushd "${ROOTDIR}"/"${i}"-src/
-			tar cfJ ${ROOTDIR}/artifacts/dotnet-cli-"${i}"-src.tar.xz *
-		popd
+		# Strip dlls and exes from the sources
+		find "${ROOTDIR}"/"${i}"-src/ -regextype posix-egrep -regex ".*\.(dll|exe)$" -type f -delete
+
+		tar -czvf ${ROOTDIR}/artifacts/dotnet-cli-"${i}"-src.tar.gz "${ROOTDIR}"/"${i}"-src/
 	done
 	ls -liah artifacts/
 else
@@ -170,5 +171,5 @@ fi
 
 pushd ${ROOTDIR}/artifacts
 for a in $(ls); do
-	aws s3 cp "${a}" s3://${STAGING_BUILDPACKS_BUCKET}/dependencies/dotnet
+	aws s3 cp "${a}" s3://${STAGING_BUILDPACKS_BUCKET}/dependencies/dotnet/${a}
 done
