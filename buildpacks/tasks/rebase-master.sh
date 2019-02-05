@@ -37,7 +37,7 @@ pushd git.cf-buildpack
   git reset v${CURRENT_VERSION}
 
   # Reset SUSE VERSION and manifest.yml file to its original state
-  for file in VERSION manifest.yml config/version.yml; do
+  for file in VERSION manifest.yml config/version.yml go.sum go.mod; do
     if [ -f "${file}" ]; then
       git checkout "${file}"
     fi
