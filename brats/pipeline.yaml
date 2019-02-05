@@ -1,6 +1,6 @@
 ---
 <% buildpacks = ["ruby", "go", "python", "php", "nodejs", "staticfile", "nginx", "binary", "dotnet-core"] %>
-<% integration_tests = ["nginx", "binary", "ruby"] %>
+<% integration_tests = ["nginx", "binary", "ruby", "go"] %>
 resource_types:
 - name: email
   type: docker-image
