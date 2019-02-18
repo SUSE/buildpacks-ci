@@ -199,6 +199,7 @@ jobs:
         GIT_MAIL: {{github-username}}
         GIT_USER: suse-cf-ci-bot
         COMPOSER_GITHUB_OAUTH_TOKEN: {{github-access-token}} # Needed for PHP integration tests
+        GINKGO_ATTEMPTS: 3
       run:
         path: ci/brats/tasks/run-tests.sh
     on_failure:
