@@ -20,8 +20,9 @@ resources:
 - name: depwatcher
   type: git
   source:
-    uri: https://github.com/cloudfoundry/buildpacks-ci.git
+    uri: https://github.com/SUSE/cf-buildpacks-ci.git
     paths: [dockerfiles/depwatcher]
+    branch: incorporate_env_into_depwatcher
 
 <% buildpacks.each do |buildpack| %>
 - name: <%= buildpack %>-buildpack-gh-release
