@@ -20,6 +20,11 @@ OS="$(uname | tr '[:upper:]' '[:lower:]')"
 export TERM="linux"
 export DropSuffix="true"
 
+if [ "$STACK" == "cfsle15fs" ]; then
+	zypper ar 'http://download.suse.de/ibs/SUSE:/SLE-15:/GA/standard/SUSE:SLE-15:GA.repo'
+	zypper --gpg-auto-import-keys -n in awk libevent-devel
+fi
+
 function get_commit_sha() {
 	local version=$1
 	# Get crystal to build depwatcher
