@@ -43,6 +43,9 @@ pushd git.cf-buildpack
     fi
   done
 
+  # Fix handling of go versions with SUSE stacks
+  cp ../ci/buildpacks/files/install_go.sh scripts/install_go.sh
+
   # Create a commit for remaining SUSE changes
   if ! git diff --no-ext-diff --quiet; then
     git commit -a -m "Currently required SUSE changes"
