@@ -1,5 +1,5 @@
 ---
-<% versions = ["2.1.302", "2.1.403", "2.1.503", "2.2.100"] %>
+<% versions = ["2.1.403", "2.1.503", "2.2.100"] %>
 
 resources:
 - name: ci
@@ -27,7 +27,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: staging.registry.howdoi.website/splatform/rootfs-sle12
+          repository: registry.opensuse.org/cloud/platform/stack/rootfs/images/cfsle15fs
           username: {{docker-internal-username}}
           password: {{docker-internal-password}}
       inputs:
@@ -38,6 +38,7 @@ jobs:
       params:
         DOTNET_VERSION: <%= version %>
         TERM: xterm
+        STACK: cfsle15fs
         LOCAL_BUILD: "true"
         OAUTH_AUTHORIZATION_TOKEN: {{github-access-token}}
         AWS_ACCESS_KEY_ID: {{aws-access-key}}
