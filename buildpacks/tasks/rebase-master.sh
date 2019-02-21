@@ -67,7 +67,4 @@ pushd git.cf-buildpack
   # Fork
   git checkout -b ${UPSTREAM_VERSION}
   git push origin ${UPSTREAM_VERSION}
-
-  # Update master for the brats
-  git push -f origin ${UPSTREAM_VERSION}:master
 popd

@@ -26,11 +26,21 @@ resources:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
 <% buildpacks.each do |buildpack| %>
+- name: gh-release.<%= buildpack %>-buildpack
+  type: github-release
+  source:
+    owner: cloudfoundry
+    repository: <%= buildpack %>-buildpack
+    access_token: {{github-access-token}}
 - name: git.cf-<%= buildpack %>-buildpack
   type: git
   source:
     uri: git@github.com:SUSE/cf-<%= buildpack %>-buildpack.git
     private_key: {{github-private-key}}
+- name: git.cf-<%= buildpack %>-buildpack-readonly
+  type: git
+  source:
+    uri: https://github.com/SUSE/cf-<%= buildpack %>-buildpack.git
 - name: git.cf-<%= buildpack %>-buildpack-release
   type: git
   source:
@@ -65,7 +75,8 @@ jobs:
     - get: s3.suse-buildpacks-staging-<%= buildpack %>
       trigger: true
     - get: ci
-    - get: git.cf-<%= buildpack %>-buildpack
+    - get: git.cf-<%= buildpack %>-buildpack-readonly
+    - get: gh-release.<%= buildpack %>-buildpack
   - task: cleanup
     config:
       platform: linux
@@ -90,8 +101,9 @@ jobs:
         body_text: "There was a problem cleaning up the BRATS cluster. BRATS could not be run!"
   - task: run-tests
     input_mapping:
-      git.cf-buildpack: git.cf-<%= buildpack %>-buildpack
+      git.cf-buildpack: git.cf-<%= buildpack %>-buildpack-readonly
       s3.suse-buildpacks-staging: s3.suse-buildpacks-staging-<%= buildpack %>
+      gh-release.buildpack: gh-release.<%= buildpack %>-buildpack
     config:
       platform: linux
       image_resource:
@@ -100,6 +112,7 @@ jobs:
           repository: splatform/concourse-brats
       inputs:
         - name: git.cf-buildpack
+        - name: gh-release.buildpack
         - name: s3.suse-buildpacks-staging
         - name: ci
       outputs:
@@ -137,7 +150,8 @@ jobs:
       passed:
       - run-<%= buildpack %>-brats
     - get: ci
-    - get: git.cf-<%= buildpack %>-buildpack
+    - get: git.cf-<%= buildpack %>-buildpack-readonly
+    - get: gh-release.<%= buildpack %>-buildpack
   - task: cleanup
     config:
       platform: linux
@@ -163,7 +177,8 @@ jobs:
   - task: run-tests
     privileged: true
     input_mapping:
-      git.cf-buildpack: git.cf-<%= buildpack %>-buildpack
+      git.cf-buildpack: git.cf-<%= buildpack %>-buildpack-readonly
+      gh-release.buildpack: gh-release.<%= buildpack %>-buildpack
       s3.suse-buildpacks-staging: s3.suse-buildpacks-staging-<%= buildpack %>
     config:
       platform: linux
@@ -173,6 +188,7 @@ jobs:
           repository: splatform/concourse-brats
       inputs:
         - name: git.cf-buildpack
+        - name: gh-release.buildpack
         - name: s3.suse-buildpacks-staging
         - name: ci
       outputs:

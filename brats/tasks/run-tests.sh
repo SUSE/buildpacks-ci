@@ -19,8 +19,16 @@ source ci/brats/tasks/cf_login.sh 2>&1 | tee mail-output/body-failed.txt
 git config --global user.email "${GIT_MAIL}"
 git config --global user.name "${GIT_USER}"
 
+UPSTREAM_VERSION=$(cat gh-release.buildpack/version)
+
 # make sure that we do not test the git version but the buildpack one
 cd git.cf-buildpack
+
+# Make sure we can check out our remote branch because concourse restricts to master
+git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+git fetch origin
+git checkout ${UPSTREAM_VERSION}
+
 # Make sure the manifest and version file from git are not used
 rm manifest.yml VERSION 2>&1 | tee ../mail-output/body-failed.txt
 
