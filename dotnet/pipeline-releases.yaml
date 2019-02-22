@@ -27,7 +27,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: registry.opensuse.org/cloud/platform/stack/rootfs/images/cfsle15fs
+          repository: registry.opensuse.org/cloud/platform/stack/rootfs/images/sle15
           username: {{docker-internal-username}}
           password: {{docker-internal-password}}
       inputs:
@@ -38,7 +38,7 @@ jobs:
       params:
         DOTNET_VERSION: <%= version %>
         TERM: xterm
-        STACK: cfsle15fs
+        STACK: sle15
         LOCAL_BUILD: "true"
         OAUTH_AUTHORIZATION_TOKEN: {{github-access-token}}
         AWS_ACCESS_KEY_ID: {{aws-access-key}}

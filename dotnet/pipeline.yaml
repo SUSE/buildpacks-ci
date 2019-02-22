@@ -42,7 +42,7 @@ jobs:
       image_resource:
         type: docker-image
         source:
-          repository: registry.opensuse.org/cloud/platform/stack/rootfs/images/cfsle15fs
+          repository: registry.opensuse.org/cloud/platform/stack/rootfs/images/sle15
           username: {{docker-internal-username}}
           password: {{docker-internal-password}}
       inputs:
@@ -58,7 +58,7 @@ jobs:
         AWS_ACCESS_KEY_ID: {{aws-access-key}}
         AWS_SECRET_ACCESS_KEY: {{aws-secret-key}}
         AWS_DEFAULT_REGION: us-east-1
-        STACK: cfsle15fs
+        STACK: sle15
         STAGING_BUILDPACKS_BUCKET: {{s3-staging-buildpacks-bucket}}
       run:
         path: ci/dotnet/tasks/build.sh
@@ -134,7 +134,7 @@ jobs:
       OBS_USERNAME:  {{obs-username}}
       OBS_PASSWORD:  {{obs-password}}
       DEPDIR: '.'
-      STACK_MAPPINGS: '{ "sle12":"cflinuxfs2", "opensuse42": "cflinuxfs2", "cfsle15fs": "cflinuxfs3"}'
+      STACK_MAPPINGS: '{ "sle12":"cflinuxfs2", "opensuse42": "cflinuxfs2", "sle15": "cflinuxfs3"}'
       OAUTH_AUTHORIZATION_TOKEN: {{github-access-token}}
     config:
       platform: linux
@@ -175,7 +175,7 @@ jobs:
       AWS_ACCESS_KEY_ID: {{aws-access-key}}
       AWS_SECRET_ACCESS_KEY: {{aws-secret-key}}
       AWS_DEFAULT_REGION: us-east-1
-      STACK_MAPPINGS: '{ "sle12":"cflinuxfs2", "opensuse42": "cflinuxfs2", "cfsle15fs": "cflinuxfs3"}'
+      STACK_MAPPINGS: '{ "sle12":"cflinuxfs2", "opensuse42": "cflinuxfs2", "sle15": "cflinuxfs3"}'
       OAUTH_AUTHORIZATION_TOKEN: {{github-access-token}}
     config:
       platform: linux
