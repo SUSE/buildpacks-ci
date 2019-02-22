@@ -14,6 +14,10 @@ elif [ $CF_STACK == "sle12" ]; then
     GO_SHA256="a369350d61414f7a767972e105cc8c3f8ef8e18664165b564538042d1ea944cf"
 elif [ $CF_STACK == "opensuse42" ]; then
     GO_SHA256="34fba3be2b639ea8970dd193dd0823493b6911fc4dba83f46eadd6e365704290"
+else
+  echo "       **ERROR** Unsupported stack"
+  echo "                 See https://docs.cloudfoundry.org/devguide/deploy-apps/stacks.html for more info"
+  exit 1
 fi
 
 export GoInstallDir="/tmp/go$GO_VERSION"
