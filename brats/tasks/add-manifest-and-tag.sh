@@ -41,14 +41,15 @@ pushd git.cf-buildpack
   else
     FILES="config/version.yml"
   fi
+  git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
+  git fetch origin
+
+  git checkout ${UPSTREAM_VERSION}
+
   unzip -o ../s3.cf-buildpacks.suse.com/*.zip  $FILES
   # Create commit if the SUSE related files are not up to date
   if ! git diff --no-ext-diff --quiet; then
     # Make sure we can check out our remote branch because concourse restricts to master
-    git config remote.origin.fetch '+refs/heads/*:refs/remotes/origin/*'
-    git fetch origin
-
-    git checkout ${UPSTREAM_VERSION}
     git commit $FILES -m "Add SUSE $FILES"
     git push origin ${UPSTREAM_VERSION}
     # Keep our master synced with the latest released version
