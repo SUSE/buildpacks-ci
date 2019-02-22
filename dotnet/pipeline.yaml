@@ -113,7 +113,7 @@ jobs:
       outputs:
       - name: out
       run:
-        path: ci/dotnet/tasks/rebase-master.sh
+        path: ci/buildpacks/tasks/rebase-master.sh
 - name: add-missing-dotnet-core-obs-dependencies
   plan:
   - aggregate:
