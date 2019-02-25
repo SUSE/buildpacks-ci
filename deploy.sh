@@ -6,6 +6,10 @@ common() {
 	fly -t ${TARGET} expose-pipeline -p ${2}
 }
 
+sle15brats() {
+	fly -t ${TARGET} set-pipeline -p sle15brats -c <(erb brats/sle15brats.yaml) -l ${CONCOURSE_SECRETS_FILE} && \
+}
+
 brats() {
   common brats buildpacks-test-and-release
 }
@@ -43,6 +47,9 @@ fi
 case $1 in
 brats)
 	brats
+  ;;
+sle15brats)
+	sle15brats
   ;;
 buildpacks)
 	buildpacks
