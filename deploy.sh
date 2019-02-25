@@ -7,7 +7,7 @@ common() {
 }
 
 sle15brats() {
-	fly -t ${TARGET} set-pipeline -p sle15brats -c <(erb brats/sle15brats.yaml) -l ${CONCOURSE_SECRETS_FILE} && \
+	fly -t ${TARGET} set-pipeline -p sle15brats -c <(erb brats/sle15brats.yaml) -l ${CONCOURSE_SECRETS_FILE}
 }
 
 brats() {
