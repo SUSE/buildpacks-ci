@@ -11,7 +11,7 @@ DOTNET_SHA="${DOTNET_SHA:-}"
 
 if [[ -z "$DOTNET_VERSION" ]]; then
 	release_tag=$(cat $ROOTDIR/dotnet-core-buildpack-gh-release/tag)
-	DOTNET_VERSION=$($ROOTDIR/ci/dotnet/tasks/compare_manifests ${release_tag})
+	DOTNET_VERSION="$($ROOTDIR/ci/dotnet/tasks/compare_manifests ${release_tag} | uniq)"
 	[[ -z "$DOTNET_VERSION" ]] && DOTNET_VERSION="$(cat dotnet-core-buildpack-gh-release/body | grep 'Add dotnet-sdk' | perl -pe '($_)=/([0-9]+([.][0-9]+)+)/')"
 fi
 
@@ -127,7 +127,7 @@ if [[ -z "${DOTNET_VERSION}" ]]; then
 fi
 
 if [ "$BUILD" = true ]; then
-	for i in "${DOTNET_VERSION[@]}"
+	for i in ${DOTNET_VERSION}
 	do
 		echo "Building dotnet version: ${i}"
 		build "${i}" "${DOTNET_SHA}" "${ROOTDIR}/${i}-build"
