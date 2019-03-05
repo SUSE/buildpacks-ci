@@ -1,25 +1,25 @@
 ---
 <% buildpacks = ["ruby", "go", "python", "php", "nodejs", "staticfile", "nginx", "binary", "dotnet-core"] %>
 <% integration_tests = ["nginx", "binary", "ruby", "go", "nodejs", "staticfile", "python", "php"] %>
-resource_types:
-- name: email
-  type: docker-image
-  source:
-    repository: pcfseceng/email-resource
+#resource_types:
+#- name: email
+#  type: docker-image
+#  source:
+#    repository: pcfseceng/email-resource
 
 resources:
-- name: email.suse
-  type: email
-  source:
-    smtp:
-      anonymous: true
-      host: {{notification-imap-alternate-host}}
-      port: {{notification-imap-alternate-port}}
-      ca_cert: |
-        ((notification-ca-cert))
-    from: {{notification-from}}
-    to:
-      - {{notification-to}}
+#- name: email.suse
+#  type: email
+#  source:
+#    smtp:
+#      anonymous: true
+#      host: {{notification-imap-alternate-host}}
+#      port: {{notification-imap-alternate-port}}
+#      ca_cert: |
+#        ((notification-ca-cert))
+#    from: {{notification-from}}
+#    to:
+#      - {{notification-to}}
 - name: ci
   type: git
   source:
@@ -94,11 +94,11 @@ jobs:
         CF_SPACE: {{brats-cf-space}}
       run:
         path: ci/brats/tasks/cleanup.sh
-    on_failure:
-      put: email.suse
-      params:
-        subject_text: "BRATS cleanup failed"
-        body_text: "There was a problem cleaning up the BRATS cluster. BRATS could not be run!"
+#    on_failure:
+#      put: email.suse
+#      params:
+#        subject_text: "BRATS cleanup failed"
+#        body_text: "There was a problem cleaning up the BRATS cluster. BRATS could not be run!"
   - task: run-tests
     input_mapping:
       git.cf-buildpack: git.cf-<%= buildpack %>-buildpack-readonly
@@ -137,11 +137,11 @@ jobs:
         GINKGO_NODES: 5
       run:
         path: ci/brats/tasks/run-tests.sh
-    on_failure:
-      put: email.suse
-      params:
-        subject: mail-output/subject-failed.txt
-        body: mail-output/body-failed.txt
+#    on_failure:
+#      put: email.suse
+#      params:
+#        subject: mail-output/subject-failed.txt
+#        body: mail-output/body-failed.txt
 - name: run-<%= buildpack %>-integration-tests
   serial_groups: [tests]
   plan:
@@ -170,11 +170,11 @@ jobs:
         CF_SPACE: {{brats-cf-space}}
       run:
         path: ci/brats/tasks/cleanup.sh
-    on_failure:
-      put: email.suse
-      params:
-        subject_text: "BRATS cleanup failed"
-        body_text: "There was a problem cleaning up the BRATS cluster. BRATS could not be run!"
+#    on_failure:
+#      put: email.suse
+#      params:
+#        subject_text: "BRATS cleanup failed"
+#        body_text: "There was a problem cleaning up the BRATS cluster. BRATS could not be run!"
   - task: run-tests
     privileged: true
     input_mapping:
@@ -220,11 +220,11 @@ jobs:
         GINKGO_NODES: 5
       run:
         path: ci/brats/tasks/run-tests.sh
-    on_failure:
-      put: email.suse
-      params:
-        subject: mail-output/subject-failed.txt
-        body: mail-output/body-failed.txt
+#    on_failure:
+#      put: email.suse
+#      params:
+#        subject: mail-output/subject-failed.txt
+#        body: mail-output/body-failed.txt
 - name: create-final-<%= buildpack %>-buildpack
   plan:
   - aggregate:
@@ -320,11 +320,11 @@ jobs:
         args:
           - "-c"
           - mkdir /out && /package --accept-external-binaries SUSE <%= buildpack %> ''  {{brats-cf-stack}}
-    on_failure:
-      put: email.suse
-      params:
-        subject_text: "Offline <%= buildpack %> buildpack could not be created"
-        body_text: "Building the offline buildpack with our packager failed. Check Concourse for the results."
+#    on_failure:
+#      put: email.suse
+#      params:
+#        subject_text: "Offline <%= buildpack %> buildpack could not be created"
+#        body_text: "Building the offline buildpack with our packager failed. Check Concourse for the results."
 - name: update-<%= buildpack %>-buildpack-release
   plan:
   - aggregate:

@@ -1,11 +1,11 @@
 ---
 <% buildpacks= ["ruby", "go", "python", "php", "nodejs", "staticfile", "nginx", "binary"] %>
 
-resource_types:
-  - name: email
-    type: docker-image
-    source:
-      repository: pcfseceng/email-resource
+#resource_types:
+#  - name: email
+#    type: docker-image
+#    source:
+#      repository: pcfseceng/email-resource
 resources:
 - name: ci
   type: git
@@ -37,17 +37,17 @@ resources:
     uri: git@github.com:SUSE/cf-<%= buildpack %>-buildpack.git
     private_key: {{github-private-key}}
 <% end %>
-- name: email.suse
-  type: email
-  source:
-    smtp:
-      anonymous: true
-      host: {{notification-imap-host}}
-      port: {{notification-imap-port}}
-      ca_cert: {{notification-ca-cert}}
-    from: {{notification-from}}
-    to:
-      - {{notification-to}}
+#- name: email.suse
+#  type: email
+#  source:
+#    smtp:
+#      anonymous: true
+#      host: {{notification-imap-host}}
+#      port: {{notification-imap-port}}
+#      ca_cert: {{notification-ca-cert}}
+#    from: {{notification-from}}
+#    to:
+#      - {{notification-to}}
 jobs:
 <% buildpacks.each do |buildpack| %>
 - name: rebase-<%= buildpack %>-buildpack-against-upstream
@@ -81,12 +81,12 @@ jobs:
       - name: out
       run:
         path: ci/buildpacks/tasks/rebase-master.sh
-    on_failure:
-      do:
-      - put: email.suse
-        params:
-          subject: out/failure_email_notification_subject
-          body: out/failure_email_notification_body
+#    on_failure:
+#      do:
+#      - put: email.suse
+#        params:
+#          subject: out/failure_email_notification_subject
+#          body: out/failure_email_notification_body
 
 - name: add-missing-<%= buildpack %>-dependencies
   plan:
@@ -121,12 +121,12 @@ jobs:
       - name: out
       run:
         path: ci/buildpacks/tasks/add-missing-dependencies.sh
-    on_failure:
-      do:
-      - put: email.suse
-        params:
-          subject: out/failure_email_notification_subject
-          body: out/failure_email_notification_body
+#    on_failure:
+#      do:
+#      - put: email.suse
+#        params:
+#          subject: out/failure_email_notification_subject
+#          body: out/failure_email_notification_body
 
 - name: create-<%= buildpack %>-buildpack-on-obs
   plan:
@@ -164,10 +164,10 @@ jobs:
       - name: out
       run:
         path: ci/buildpacks/tasks/create-buildpack-on-obs.sh
-    on_failure:
-      do:
-      - put: email.suse
-        params:
-          subject: out/failure_email_notification_subject
-          body: out/failure_email_notification_body
+#    on_failure:
+#      do:
+#      - put: email.suse
+#        params:
+#          subject: out/failure_email_notification_subject
+#          body: out/failure_email_notification_body
 <% end %>
