@@ -2,6 +2,10 @@
 
 set -e
 
+function isVersionLower() {
+  printf '%s\n%s' "$1" "$2" | sort -C -V
+}
+
 # Get rid of quotes in the beginning and end
 export GITHUB_PRIVATE_KEY=${GITHUB_PRIVATE_KEY:1:-1}
 
@@ -13,6 +17,14 @@ chmod 0600 ~/.ssh/id_ecdsa
 
 git config --global user.email "${GIT_MAIL}"
 git config --global user.name "${GIT_USER}"
+
+UPSTREAM_GO_VERSION=$(grep -oE '([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)' git.cf-buildpack/scripts/install_go.sh)
+OUR_GO_VERSION=$(grep -oE '([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)' ci/buildpacks/files/install_go.sh)
+
+if ! $(isVersionLower $UPSTREAM_GO_VERSION $OUR_GO_VERSION); then
+  echo "Please update buildpacks/files/install_go.sh to latest go version. Upstream uses go version $UPSTREAM_GO_VERSION."
+  exit 1
+fi
 
 UPSTREAM_VERSION=$(cat buildpack-gh-release/version)
 
@@ -37,14 +49,11 @@ pushd git.cf-buildpack
   git reset v${CURRENT_VERSION}
 
   # Reset SUSE VERSION and manifest.yml file to its original state
-  for file in VERSION manifest.yml config/version.yml go.sum go.mod; do
+  for file in VERSION manifest.yml config/version.yml go.sum go.mod scripts/install_go.sh; do
     if [ -f "${file}" ]; then
       git checkout "${file}"
     fi
   done
-
-  # Fix handling of go versions with SUSE stacks
-  cp ../ci/buildpacks/files/install_go.sh scripts/install_go.sh
 
   # Create a commit for remaining SUSE changes
   if ! git diff --no-ext-diff --quiet; then
@@ -59,6 +68,17 @@ pushd git.cf-buildpack
 
   if [ -n "$SUSE_COMMIT" ]; then
     git cherry-pick $SUSE_COMMIT
+    # Fix handling of go versions with SUSE stacks
+    cp ../ci/buildpacks/files/install_go.sh scripts/install_go.sh
+    if ! git diff --no-ext-diff --quiet; then
+      git commit -a --amend -m "Currently required SUSE changes"
+    fi
+  else
+    # Fix handling of go versions with SUSE stacks
+    cp ../ci/buildpacks/files/install_go.sh scripts/install_go.sh
+    if ! git diff --no-ext-diff --quiet; then
+      git commit -a -m "Currently required SUSE changes"
+    fi
   fi
 
   # Make sure that our fork has the same tags as upstream
