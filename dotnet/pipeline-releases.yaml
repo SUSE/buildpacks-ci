@@ -25,7 +25,7 @@ jobs:
     config:
       platform: linux
       image_resource:
-        type: docker-image
+        type: registry-image
         source:
           repository: registry.opensuse.org/cloud/platform/stack/rootfs/images/sle15
           username: {{docker-internal-username}}
@@ -51,7 +51,7 @@ jobs:
     config:
       platform: linux
       image_resource:
-        type: docker-image
+        type: registry-image
         source:
           repository: splatform/binary_builder_obs_opensuse
       inputs:
