@@ -1,7 +1,7 @@
 ---
 resource_types:
 - name: email
-  type: docker-image
+  type: registry-image
   source:
     repository: pcfseceng/email-resource
 
@@ -67,7 +67,7 @@ jobs:
     config:
       platform: linux
       image_resource:
-        type: docker-image
+        type: registry-image
         source:
           repository: splatform/binary_builder_obs_opensuse
       inputs:
@@ -89,7 +89,7 @@ jobs:
     config:
       platform: linux
       image_resource:
-        type: docker-image
+        type: registry-image
         source:
           repository: splatform/binary_builder_obs_opensuse
       run:
@@ -113,7 +113,7 @@ jobs:
     config:
       platform: linux
       image_resource:
-        type: docker-image
+        type: registry-image
         source:
           repository: splatform/binary_builder_obs_opensuse
       inputs:
@@ -153,7 +153,7 @@ jobs:
     config:
       platform: linux
       image_resource:
-        type: docker-image
+        type: registry-image
         source:
           repository: splatform/concourse-brats
       inputs:
@@ -172,7 +172,7 @@ jobs:
     config:
       platform: linux
       image_resource:
-        type: docker-image
+        type: registry-image
         source:
           repository: splatform/cf-buildpack-packager
       run:
@@ -200,7 +200,7 @@ jobs:
     config:
       platform: linux
       image_resource:
-        type: docker-image
+        type: registry-image
         source:
           repository: splatform/concourse-brats
       inputs:
