@@ -124,7 +124,11 @@ jobs:
         PROXY_USERNAME: {{brats-proxy-username}}
         PROXY_PASSWORD: {{brats-proxy-password}}
         PROXY_HOST: {{brats-proxy-host}}
+        <% if buildpack == "dotnet-core" %>
+        CF_STACK: sle15
+        <% else %>
         CF_STACK: {{brats-cf-stack}}
+        <% end %>
         CF_ENDPOINT: {{brats-cf-endpoint}}
         CF_USERNAME: {{brats-cf-username}}
         CF_PASSWORD: {{brats-cf-password}}
@@ -204,7 +208,11 @@ jobs:
         PROXY_USERNAME: {{brats-proxy-username}}
         PROXY_PASSWORD: {{brats-proxy-password}}
         PROXY_HOST: {{brats-proxy-host}}
+        <% if buildpack == "dotnet-core" %>
+        CF_STACK: sle15
+        <% else %>
         CF_STACK: {{brats-cf-stack}}
+        <% end %>
         CF_ENDPOINT: {{brats-cf-endpoint}}
         CF_USERNAME: {{brats-cf-username}}
         CF_PASSWORD: {{brats-cf-password}}
