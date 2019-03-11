@@ -4,7 +4,7 @@ FROM opensuse/leap:15.0
 RUN zypper ar https://download.opensuse.org/repositories/devel:/languages:/go/openSUSE_Leap_15.0/ go
 RUN zypper ar https://download.opensuse.org/repositories/Cloud:/Platform:/buildpacks:/build-requires/openSUSE_Leap_15.0/ buildpacks-build-requires
 RUN zypper --gpg-auto-import-keys -n in go-buildpack-packager
-RUN zypper --gpg-auto-import-keys -n in go
+RUN zypper --gpg-auto-import-keys -n in go1.11
 
 # Needed for integration tests
 RUN zypper in -y chromedriver
