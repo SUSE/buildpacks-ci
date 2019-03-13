@@ -18,12 +18,14 @@ chmod 0600 ~/.ssh/id_ecdsa
 git config --global user.email "${GIT_MAIL}"
 git config --global user.name "${GIT_USER}"
 
-UPSTREAM_GO_VERSION=$(grep -oE '([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)' git.cf-buildpack/scripts/install_go.sh)
-OUR_GO_VERSION=$(grep -oE '([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)' ci/buildpacks/files/install_go.sh)
+if [ -f git.cf-buildpack/scripts/install_go.sh ]; then
+  UPSTREAM_GO_VERSION=$(grep -oE '([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)' git.cf-buildpack/scripts/install_go.sh)
+  OUR_GO_VERSION=$(grep -oE '([[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+)' ci/buildpacks/files/install_go.sh)
 
-if ! $(isVersionLower $UPSTREAM_GO_VERSION $OUR_GO_VERSION); then
-  echo "Please update buildpacks/files/install_go.sh to latest go version. Upstream uses go version $UPSTREAM_GO_VERSION."
-  exit 1
+  if ! $(isVersionLower $UPSTREAM_GO_VERSION $OUR_GO_VERSION); then
+    echo "Please update buildpacks/files/install_go.sh to latest go version. Upstream uses go version $UPSTREAM_GO_VERSION."
+    exit 1
+  fi
 fi
 
 UPSTREAM_VERSION=$(cat buildpack-gh-release/version)
