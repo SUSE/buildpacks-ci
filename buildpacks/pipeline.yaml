@@ -102,7 +102,7 @@ jobs:
     input_mapping: { buildpack-gh-release: <%= buildpack %>-buildpack-gh-release }
     params:
       OBS_DEPENDENCY_PROJECT: {{obs-buildpack-dependencies-staging-project}}
-      STACK_MAPPINGS: '{ "sle12":"cflinuxfs2", "opensuse42": "cflinuxfs2", "sle15": "cflinuxfs3"}'
+      STACK_MAPPINGS: '{ "sle12":"cflinuxfs2", "sle15": "cflinuxfs3"}'
       BUILDPACK: <%= buildpack %>
       OBS_USERNAME:  {{obs-username}}
       OBS_PASSWORD:  {{obs-password}}
@@ -143,7 +143,7 @@ jobs:
       OBS_DEPENDENCY_PROJECT: {{obs-buildpack-dependencies-staging-project}}
       OBS_BUILDPACK_PROJECT: {{obs-buildpacks-staging-project}}
       STAGING_BUILDPACKS_BUCKET: {{s3-staging-buildpacks-bucket}}
-      STACK_MAPPINGS: '{ "sle12":"cflinuxfs2", "opensuse42": "cflinuxfs2", "sle15": "cflinuxfs3"}'
+      STACK_MAPPINGS: '{ "sle12":"cflinuxfs2", "sle15": "cflinuxfs3"}'
       BUILDPACK: <%= buildpack %>
       OBS_USERNAME:  {{obs-username}}
       OBS_PASSWORD:  {{obs-password}}
