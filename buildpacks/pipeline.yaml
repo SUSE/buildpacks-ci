@@ -170,4 +170,33 @@ jobs:
 #        params:
 #          subject: out/failure_email_notification_subject
 #          body: out/failure_email_notification_body
+- name: wait-for-<%= buildpack %>-buildpack-to-be-built
+  plan:
+  - aggregate:
+    - get: <%= buildpack %>-buildpack-gh-release
+      passed:
+        - create-<%= buildpack %>-buildpack-on-obs
+      trigger: true
+    - get: ci
+  - task: wait-for-obs
+    input_mapping: { buildpack-gh-release: <%= buildpack %>-buildpack-gh-release }
+    params:
+      OBS_BUILDPACK_PROJECT: {{obs-buildpacks-staging-project}}
+      BUILDPACK: <%= buildpack %>
+      OBS_USERNAME:  {{obs-username}}
+      OBS_PASSWORD:  {{obs-password}}
+      WAITING_TIME_SECS: 60
+      NUMBER_OF_RETRIES: 15
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: splatform/binary_builder_obs_opensuse
+      inputs:
+        - name: ci
+        - name: buildpack-gh-release
+      run:
+        path: ci/buildpacks/tasks/wait-for-obs.sh
+
 <% end %>
