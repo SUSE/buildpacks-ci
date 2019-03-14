@@ -4,8 +4,7 @@ set -e -o pipefail
 
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
-zypper rm -y chromedriver
-zypper in -y gconf2 liberation-fonts
+rpm -e chromedriver
 wget -O chromedriver.zip 'https://chromedriver.storage.googleapis.com/2.34/chromedriver_linux64.zip'
 [ e42a55f9e28c3b545ef7c7727a2b4218c37489b4282e88903e4470e92bc1d967 = "$(shasum -a 256 chromedriver.zip | cut -d' ' -f1)" ]
 unzip chromedriver.zip -d /usr/local/bin/
