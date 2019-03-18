@@ -70,14 +70,18 @@ pushd git.cf-buildpack
 
   if [ -n "$SUSE_COMMIT" ]; then
     git cherry-pick $SUSE_COMMIT
-    # Fix handling of go versions with SUSE stacks
-    cp ../ci/buildpacks/files/install_go.sh scripts/install_go.sh
+    if [ -f scripts/install_go.sh ]; then
+      # Fix handling of go versions with SUSE stacks
+      cp ../ci/buildpacks/files/install_go.sh scripts/install_go.sh
+    fi
     if ! git diff --no-ext-diff --quiet; then
       git commit -a --amend -m "Currently required SUSE changes"
     fi
   else
-    # Fix handling of go versions with SUSE stacks
-    cp ../ci/buildpacks/files/install_go.sh scripts/install_go.sh
+    if [ -f scripts/install_go.sh ]; then
+      # Fix handling of go versions with SUSE stacks
+      cp ../ci/buildpacks/files/install_go.sh scripts/install_go.sh
+    fi
     if ! git diff --no-ext-diff --quiet; then
       git commit -a -m "Currently required SUSE changes"
     fi
