@@ -25,6 +25,13 @@ SHA1SUM=$(sha1sum ${RELEASE_TARBALL} | cut -d' ' -f1)
 SUSE_TAG=$(ls *.zip | grep -Eo 'v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+(\.[[:digit:]]+)*')
 SUSE_VERSION=$(echo ${SUSE_TAG} |  grep -Eo '[[:digit:]]+(\.[[:digit:]]+)+')
 UPSTREAM_VERSION=$(echo ${SUSE_VERSION} | sed -E 's/^([[:digit:]]+(\.[[:digit:]]+)+)\.[[:digit:]]+$/\1/')
+# Java buildpacks usually use a major and minor version only, while sometimes also shipping
+# patch releases. To prevent conflicts with our own tags we add a "0.1" to all Java
+# buildpack versions which only have a major and minor version.
+# In this case we need to filter the patch level from the UPSTREAM_VERSION too
+if [[ "${BUILDPACK}" == "java" && "${SUSE_VERSION}" =~ [0-9]+\.[0-9]+\.0\.1 ]]; then
+  UPSTREAM_VERSION=$(echo ${SUSE_VERSION} | sed -E 's/^([[:digit:]]+(\.[[:digit:]]+)+)\.0\.1$/\1/')
+fi
 MESSAGE=$(cat <<MESSAGE
 ${SUSE_TAG}
 
