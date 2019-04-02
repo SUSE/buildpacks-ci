@@ -48,6 +48,11 @@ pushd git.cf-buildpack
   fi
   CURRENT_VERSION=$(grep -oE '[[:digit:]]+\.[[:digit:]]+(\.[[:digit:]]+)*' $VERSION_FILE | perl -pe 's/.*?([0-9]+(\.[0-9]+)*)\.[0-9]+/\1/')
 
+  # Prevent versions with patch level zero on java buildpacks
+  if [[ "${BUILDPACK}" == "java" && "${CURRENT_VERSION}" =~ [0-9]+\.[0-9]+\.0 ]]; then
+    CURRENT_VERSION=$(echo ${CURRENT_VERSION} | sed -E 's/^([[:digit:]]+(\.[[:digit:]]+)+)\.0$/\1/')
+  fi
+
   git reset v${CURRENT_VERSION}
 
   # Reset SUSE VERSION and manifest.yml file to its original state
