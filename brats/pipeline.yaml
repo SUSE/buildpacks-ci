@@ -223,7 +223,7 @@ jobs:
         PROJECT: {{obs-buildpacks-staging-project}}
         GIT_MAIL: {{github-username}}
         GIT_USER: suse-cf-ci-bot
-        COMPOSER_GITHUB_OAUTH_TOKEN: content_not_relevant # Needed for PHP integration tests
+        COMPOSER_GITHUB_OAUTH_TOKEN: {{github-limited-token}} # Needed for PHP integration tests
         GINKGO_ATTEMPTS: 3
         GINKGO_NODES: 5
       run:
@@ -383,7 +383,7 @@ jobs:
         PROJECT: {{obs-buildpacks-staging-project}}
         GIT_MAIL: {{github-username}}
         GIT_USER: suse-cf-ci-bot
-        COMPOSER_GITHUB_OAUTH_TOKEN: content_not_relevant  # Needed for PHP integration tests
+        COMPOSER_GITHUB_OAUTH_TOKEN: {{github-limited-token}}  # Needed for PHP integration tests
         GINKGO_ATTEMPTS: 3
         GINKGO_NODES: 5
       run:
