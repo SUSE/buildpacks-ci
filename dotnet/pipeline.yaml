@@ -134,7 +134,7 @@ jobs:
       OBS_USERNAME:  {{obs-username}}
       OBS_PASSWORD:  {{obs-password}}
       DEPDIR: '.'
-      STACK_MAPPINGS: '{ "sle12":"cflinuxfs2", "opensuse42": "cflinuxfs2", "sle15": "cflinuxfs3"}'
+      STACK_MAPPINGS: '{ "sle15": "cflinuxfs3"}'
       OAUTH_AUTHORIZATION_TOKEN: {{github-access-token}}
     config:
       platform: linux
@@ -175,7 +175,7 @@ jobs:
       AWS_ACCESS_KEY_ID: {{aws-access-key}}
       AWS_SECRET_ACCESS_KEY: {{aws-secret-key}}
       AWS_DEFAULT_REGION: us-east-1
-      STACK_MAPPINGS: '{ "sle12":"cflinuxfs2", "opensuse42": "cflinuxfs2", "sle15": "cflinuxfs3"}'
+      STACK_MAPPINGS: '{ "sle15": "cflinuxfs3"}'
       OAUTH_AUTHORIZATION_TOKEN: {{github-access-token}}
     config:
       platform: linux
