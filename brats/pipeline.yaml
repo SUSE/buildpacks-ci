@@ -124,11 +124,7 @@ jobs:
         PROXY_USERNAME: {{brats-proxy-username}}
         PROXY_PASSWORD: {{brats-proxy-password}}
         PROXY_HOST: {{brats-proxy-host}}
-        <% if buildpack == "dotnet-core" %>
-        CF_STACK: sle15
-        <% else %>
         CF_STACK: {{brats-cf-stack}}
-        <% end %>
         CF_ENDPOINT: {{brats-cf-endpoint}}
         CF_USERNAME: {{brats-cf-username}}
         CF_PASSWORD: {{brats-cf-password}}
@@ -209,11 +205,7 @@ jobs:
         PROXY_USERNAME: {{brats-proxy-username}}
         PROXY_PASSWORD: {{brats-proxy-password}}
         PROXY_HOST: {{brats-proxy-host}}
-        <% if buildpack == "dotnet-core" %>
-        CF_STACK: sle15
-        <% else %>
         CF_STACK: {{brats-cf-stack}}
-        <% end %>
         CF_ENDPOINT: {{brats-cf-endpoint}}
         CF_USERNAME: {{brats-cf-username}}
         CF_PASSWORD: {{brats-cf-password}}
@@ -233,173 +225,13 @@ jobs:
 #      params:
 #        subject: mail-output/subject-failed.txt
 #        body: mail-output/body-failed.txt
-- name: run-<%= buildpack %>-brats-sle15
-  serial_groups: [tests]
-  plan:
-  - aggregate:
-    - get: s3.suse-buildpacks-staging-<%= buildpack %>
-      trigger: true
-      passed: 
-      - run-<%= buildpack %>-integration-tests
-    - get: ci
-    - get: git.cf-<%= buildpack %>-buildpack-readonly
-    - get: gh-release.<%= buildpack %>-buildpack
-  - task: cleanup
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: splatform/concourse-brats
-      inputs:
-        - name: ci
-      params:
-        CF_ENDPOINT: {{brats-cf-endpoint}}
-        CF_USERNAME: {{brats-cf-username}}
-        CF_PASSWORD: {{brats-cf-password}}
-        CF_ORG: {{brats-cf-org}}
-        CF_SPACE: {{brats-cf-space}}
-      run:
-        path: ci/brats/tasks/cleanup.sh
-#    on_failure:
-#      put: email.suse
-#      params:
-#        subject_text: "BRATS cleanup failed"
-#        body_text: "There was a problem cleaning up the BRATS cluster. BRATS could not be run!"
-  - task: run-tests
-    input_mapping:
-      git.cf-buildpack: git.cf-<%= buildpack %>-buildpack-readonly
-      s3.suse-buildpacks-staging: s3.suse-buildpacks-staging-<%= buildpack %>
-      gh-release.buildpack: gh-release.<%= buildpack %>-buildpack
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: splatform/concourse-brats
-      inputs:
-        - name: git.cf-buildpack
-        - name: gh-release.buildpack
-        - name: s3.suse-buildpacks-staging
-        - name: ci
-      outputs:
-        - name: mail-output
-      params:
-        BUILDPACK: <%= buildpack %>
-        TEST_SUITE: brats
-        PROXY_SCHEME: {{brats-proxy-scheme}}
-        PROXY_PORT: {{brats-proxy-port}}
-        PROXY_USERNAME: {{brats-proxy-username}}
-        PROXY_PASSWORD: {{brats-proxy-password}}
-        PROXY_HOST: {{brats-proxy-host}}
-        CF_STACK: sle15
-        CF_ENDPOINT: {{brats-cf-endpoint}}
-        CF_USERNAME: {{brats-cf-username}}
-        CF_PASSWORD: {{brats-cf-password}}
-        CF_ORG: {{brats-cf-org}}
-        CF_SPACE: {{brats-cf-space}}
-        PROJECT: {{obs-buildpacks-staging-project}}
-        GIT_MAIL: {{github-username}}
-        GIT_USER: suse-cf-ci-bot
-        GINKGO_NODES: 5
-        GINKGO_ATTEMPTS: 3
-      run:
-        path: ci/brats/tasks/run-tests.sh
-#    on_failure:
-#      put: email.suse
-#      params:
-#        subject: mail-output/subject-failed.txt
-#        body: mail-output/body-failed.txt
-- name: run-<%= buildpack %>-integration-tests-sle15
-  serial_groups: [tests]
-  plan:
-  - aggregate:
-    - get: s3.suse-buildpacks-staging-<%= buildpack %>
-      trigger: true
-      passed:
-      - run-<%= buildpack %>-brats-sle15
-    - get: ci
-    - get: git.cf-<%= buildpack %>-buildpack-readonly
-    - get: gh-release.<%= buildpack %>-buildpack
-  - task: cleanup
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: splatform/concourse-brats
-      inputs:
-        - name: ci
-      params:
-        CF_ENDPOINT: {{brats-cf-endpoint}}
-        CF_USERNAME: {{brats-cf-username}}
-        CF_PASSWORD: {{brats-cf-password}}
-        CF_ORG: {{brats-cf-org}}
-        CF_SPACE: {{brats-cf-space}}
-      run:
-        path: ci/brats/tasks/cleanup.sh
-#    on_failure:
-#      put: email.suse
-#      params:
-#        subject_text: "BRATS cleanup failed"
-#        body_text: "There was a problem cleaning up the BRATS cluster. BRATS could not be run!"
-  - task: run-tests
-    privileged: true
-    input_mapping:
-      git.cf-buildpack: git.cf-<%= buildpack %>-buildpack-readonly
-      gh-release.buildpack: gh-release.<%= buildpack %>-buildpack
-      s3.suse-buildpacks-staging: s3.suse-buildpacks-staging-<%= buildpack %>
-    config:
-      platform: linux
-      image_resource:
-        type: registry-image
-        source:
-          repository: splatform/concourse-brats
-      inputs:
-        - name: git.cf-buildpack
-        - name: gh-release.buildpack
-        - name: s3.suse-buildpacks-staging
-        - name: ci
-      outputs:
-        - name: mail-output
-      params:
-        BUILDPACK: <%= buildpack %>
-        TEST_SUITE: integration
-        STAGING_DOCKER_REGISTRY: {{docker-internal-registry}}
-        STAGING_DOCKER_REGISTRY_USERNAME: {{docker-internal-username}}
-        STAGING_DOCKER_REGISTRY_PASSWORD: {{docker-internal-password}}
-        PROXY_SCHEME: {{brats-proxy-scheme}}
-        PROXY_PORT: {{brats-proxy-port}}
-        PROXY_USERNAME: {{brats-proxy-username}}
-        PROXY_PASSWORD: {{brats-proxy-password}}
-        PROXY_HOST: {{brats-proxy-host}}
-        CF_STACK: sle15
-        CF_ENDPOINT: {{brats-cf-endpoint}}
-        CF_USERNAME: {{brats-cf-username}}
-        CF_PASSWORD: {{brats-cf-password}}
-        CF_ORG: {{brats-cf-org}}
-        CF_SPACE: {{brats-cf-space}}
-        CF_STACK_DOCKER_IMAGE: splatform/rootfs-opensuse42
-        PROJECT: {{obs-buildpacks-staging-project}}
-        GIT_MAIL: {{github-username}}
-        GIT_USER: suse-cf-ci-bot
-        COMPOSER_GITHUB_OAUTH_TOKEN: {{github-limited-token}}  # Needed for PHP integration tests
-        GINKGO_ATTEMPTS: 3
-        GINKGO_NODES: 5
-      run:
-        path: ci/brats/tasks/run-tests.sh
-#    on_failure:
-#      put: email.suse
-#      params:
-#        subject: mail-output/subject-failed.txt
-#        body: mail-output/body-failed.txt
 - name: create-final-<%= buildpack %>-buildpack
   plan:
   - aggregate:
     - get: s3.suse-buildpacks-staging-<%= buildpack %>
       trigger: true
       passed:
-      - run-<%= buildpack %>-integration-tests-sle15
+      - run-<%= buildpack %>-integration-tests
     - get: ci
     - get: git.cf-<%= buildpack %>-buildpack
   - task: create-final-buildpack
