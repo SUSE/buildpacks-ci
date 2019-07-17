@@ -28,10 +28,10 @@ pushd git.cf-buildpack
 git checkout
 echo "---" > config/version.yml
 echo "version: v${version}" >> config/version.yml
-# It needs at least bundler 2.0.1
-gem install bundler
-bundler.ruby2.5 install
-bundler.ruby2.5 exec rake clobber package
+# Do not enforce bundler versions
+rm Gemfile.lock
+bundler install
+bundler exec rake clobber package
 CHECKSUM=$(sha1sum build/java-buildpack-v${version}.zip | cut -d' ' -f1)
 mv build/java-buildpack-v${version}.zip ../out/java-buildpack-v${version}-${CHECKSUM:0:8}.zip
 popd
