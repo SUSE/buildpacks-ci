@@ -3,7 +3,7 @@ set -e
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 ROOTDIR=$DIR/../../../
-STACK="${STACK:-sle12}"
+STACK="${STACK:-sle15}"
 BUILD="${BUILD:-true}"
 DOTNET_BUNDLE_URL="${DOTNET_BUNDLE_URL:-https://dotnetcli.azureedge.net/dotnet/Sdk/$DOTNET_VERSION/dotnet-sdk-$DOTNET_VERSION-linux-x64.tar.gz}"
 LOCAL_BUILD="${LOCAL_BUILD:-false}"
