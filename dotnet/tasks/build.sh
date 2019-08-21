@@ -129,6 +129,11 @@ fi
 if [ "$BUILD" = true ]; then
 	for i in ${DOTNET_VERSION}
 	do
+    if [[ $i =~ .*-preview.* ]]; then
+      echo "Skip preview version ${i}"
+      continue
+    fi
+
 		echo "Building dotnet version: ${i}"
 		build "${i}" "${DOTNET_SHA}" "${ROOTDIR}/${i}-build"
 		# Extract dependencies from sdk and build separate dependencies
