@@ -24,7 +24,7 @@ mkdir -p $GoInstallDir
 if [ ! -f $GoInstallDir/go/bin/go ]; then
   if [[ "$CF_STACK" =~ cflinuxfs[23] ]]; then
     URL=https://buildpacks.cloudfoundry.org/dependencies/go/go${GO_VERSION}.linux-amd64-${CF_STACK}-${GO_SHA256:0:8}.tar.gz
-  elif [[ "$CF_STACK" == "sle15" || "$CF_STACK" == "sle12" || "$CF_STACK" == "opensuse42" ]]; then
+  elif [[ "$CF_STACK" == "sle15" || "$CF_STACK" == "sle12" ]]; then
     URL=https://cf-buildpacks.suse.com/dependencies/go/go-${GO_VERSION}-linux-amd64-${CF_STACK}-${GO_SHA256:0:8}.tgz
   fi
 
