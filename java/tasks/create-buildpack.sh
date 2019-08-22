@@ -32,6 +32,6 @@ echo "version: v${version}" >> config/version.yml
 rm Gemfile.lock
 bundler install
 bundler exec rake clobber package
-CHECKSUM=$(sha1sum build/java-buildpack-v${version}.zip | cut -d' ' -f1)
+CHECKSUM=$(sha256sum build/java-buildpack-v${version}.zip | cut -d' ' -f1)
 mv build/java-buildpack-v${version}.zip ../out/java-buildpack-v${version}-${CHECKSUM:0:8}.zip
 popd

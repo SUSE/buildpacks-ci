@@ -51,7 +51,7 @@ original_filename=$(basename $(ls s3.suse-buildpacks-staging/*.zip))
 cp s3.suse-buildpacks-staging/${original_filename} production-buildpack.zip
 zip -r production-buildpack.zip manifest.yml
 
-new_checksum=$(sha1sum production-buildpack.zip | cut -d' ' -f1)
+new_checksum=$(sha256sum production-buildpack.zip | cut -d' ' -f1)
 new_filename=$(echo ${original_filename/-pre-/-} | sed -e "s/[0-9a-f]\{8\}.zip/${new_checksum:0:8}.zip/")
 
 mv production-buildpack.zip s3-out/${new_filename}

@@ -21,7 +21,7 @@ git config --global user.name "${GIT_USER}"
 
 pushd s3.cf-buildpacks.suse.com
 RELEASE_TARBALL=$(ls *.zip)
-SHA1SUM=$(sha1sum ${RELEASE_TARBALL} | cut -d' ' -f1)
+SHA256SUM=$(sha256sum ${RELEASE_TARBALL} | cut -d' ' -f1)
 SUSE_TAG=$(ls *.zip | grep -Eo 'v[[:digit:]]+\.[[:digit:]]+\.[[:digit:]]+(\.[[:digit:]]+)*')
 SUSE_VERSION=$(echo ${SUSE_TAG} |  grep -Eo '[[:digit:]]+(\.[[:digit:]]+)+')
 UPSTREAM_VERSION=$(echo ${SUSE_VERSION} | sed -E 's/^([[:digit:]]+(\.[[:digit:]]+)+)\.[[:digit:]]+$/\1/')
@@ -37,7 +37,8 @@ ${SUSE_TAG}
 
 [Upstream Release Notes for ${UPSTREAM_VERSION}](https://github.com/cloudfoundry/${BUILDPACK}-buildpack/releases/tag/v${UPSTREAM_VERSION})
 
-[${RELEASE_TARBALL}](https://cf-buildpacks.suse.com/${RELEASE_TARBALL}) \`sha1:${SHA1SUM}\`
+[${RELEASE_TARBALL}](https://cf-buildpacks.suse.com/${RELEASE_TARBALL})
+\`sha256:${SHA256SUM}\`
 MESSAGE
 )
 popd

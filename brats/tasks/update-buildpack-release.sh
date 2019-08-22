@@ -16,7 +16,7 @@ git config --global user.name "${GIT_USER}"
 pushd s3.cf-buildpacks.suse.com
 filename=$(ls *.zip)
 filesize=$(du -b ${filename} | awk '{print $1}')
-checksum=$(sha1sum ${filename} | cut -d' ' -f1)
+checksum=$(sha256sum ${filename} | cut -d' ' -f1)
 popd
 
 pushd git.cf-buildpack-release
@@ -26,7 +26,7 @@ cat << EOF > config/blobs.yml
 ${BUILDPACK}-buildpack/${filename}:
   size: ${filesize}
   object_id: ${filename}
-  sha: ${checksum}
+  sha: sha256:${checksum}
 EOF
 
 # bash generate random 32 character alphanumeric string (lowercase only)
