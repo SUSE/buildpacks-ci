@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -e
+
 # Make JAVA_HOME available for tetra
 . /etc/profile
 
