@@ -1,16 +1,16 @@
 #!/bin/bash
 
-set -e
+echo "Setting up oscrc"
+sed -i "s|<username>|$OBS_USERNAME|g" /root/.oscrc
+sed -i "s|<password>|$OBS_PASSWORD|g" /root/.oscrc
 
 # Make JAVA_HOME available for tetra
 . /etc/profile
 
+set -e
+
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
 ROOTDIR=$DIR/../../../
-
-echo "Setting up oscrc"
-sed -i "s|<username>|$OBS_USERNAME|g" /root/.oscrc
-sed -i "s|<password>|$OBS_PASSWORD|g" /root/.oscrc
 
 echo "Setting up local git"
 # This is needed for bundling the jruby sources using tetra. Tetra uses local git repositories for
