@@ -70,7 +70,7 @@ jobs:
 - name: run-<%= buildpack %>-brats
   serial_groups: [tests]
   plan:
-  - aggregate:
+  - in_parallel:
     - get: s3.suse-buildpacks-staging-<%= buildpack %>
       trigger: true
     - get: ci
@@ -145,7 +145,7 @@ jobs:
 - name: run-<%= buildpack %>-integration-tests
   serial_groups: [tests]
   plan:
-  - aggregate:
+  - in_parallel:
     - get: s3.suse-buildpacks-staging-<%= buildpack %>
       trigger: true
       passed:
@@ -227,7 +227,7 @@ jobs:
 #        body: mail-output/body-failed.txt
 - name: create-final-<%= buildpack %>-buildpack
   plan:
-  - aggregate:
+  - in_parallel:
     - get: s3.suse-buildpacks-staging-<%= buildpack %>
       trigger: true
       passed:
@@ -266,7 +266,7 @@ jobs:
       acl: public-read
 - name: add-manifest-and-tag-<%= buildpack %>-buildpack
   plan:
-  - aggregate:
+  - in_parallel:
     - get: s3.cf-buildpacks.suse.com-<%= buildpack %>
       trigger: true
       passed:
@@ -323,7 +323,7 @@ jobs:
 #        body_text: "Building the offline buildpack with our packager failed. Check Concourse for the results."
 - name: update-<%= buildpack %>-buildpack-release
   plan:
-  - aggregate:
+  - in_parallel:
     - get: ci
     - get: git.cf-<%= buildpack %>-buildpack-release
     - get: s3.cf-buildpacks.suse.com-<%= buildpack %>

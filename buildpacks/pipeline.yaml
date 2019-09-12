@@ -52,7 +52,7 @@ jobs:
 <% buildpacks.each do |buildpack| %>
 - name: rebase-<%= buildpack %>-buildpack-against-upstream
   plan:
-  - aggregate:
+  - in_parallel:
     - get: <%= buildpack %>-buildpack-gh-release
       trigger: true
     - get: git.cf-<%= buildpack %>-buildpack
@@ -90,7 +90,7 @@ jobs:
 
 - name: add-missing-<%= buildpack %>-dependencies
   plan:
-  - aggregate:
+  - in_parallel:
     - get: <%= buildpack %>-buildpack-gh-release
       trigger: true
       passed:
@@ -130,7 +130,7 @@ jobs:
 
 - name: create-<%= buildpack %>-buildpack-on-obs
   plan:
-  - aggregate:
+  - in_parallel:
     - get: <%= buildpack %>-buildpack-gh-release
       passed:
         - add-missing-<%= buildpack %>-dependencies
@@ -172,7 +172,7 @@ jobs:
 #          body: out/failure_email_notification_body
 - name: wait-for-<%= buildpack %>-buildpack-to-be-built
   plan:
-  - aggregate:
+  - in_parallel:
     - get: <%= buildpack %>-buildpack-gh-release
       passed:
         - create-<%= buildpack %>-buildpack-on-obs
