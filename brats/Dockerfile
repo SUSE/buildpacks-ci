@@ -7,7 +7,7 @@ RUN zypper ar https://download.opensuse.org/repositories/Cloud:/Platform:/Tools/
 RUN zypper --gpg-auto-import-keys -n in cf-cli
 
 # Needed for integration tests
-RUN zypper in -y chromedriver git tar wget unzip hub aws-cli zip jq ruby ruby2.5-rubygem-bundler which curl docker gconf2 liberation-fonts gzip
+RUN zypper in -y chromedriver make git tar wget unzip hub aws-cli zip jq ruby ruby2.5-rubygem-bundler which curl docker gconf2 liberation-fonts gzip
 ENV PATH $PATH:/usr/lib64/chromium
 
 # Store github.com ssh public key
