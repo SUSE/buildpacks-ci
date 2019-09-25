@@ -16,13 +16,13 @@ new_blobs_text="---"
 
 for stack in $(echo $STACKS); do
   # Update the bosh release repo
-  pushd s3.cf-buildpacks.suse.com.${stack}
+  pushd s3.cf-buildpacks.suse.com-${stack}
   filename=$(ls *.zip)
   filesize=$(du -b ${filename} | awk '{print $1}')
   checksum=$(sha256sum ${filename} | cut -d' ' -f1)
   popd
 
-  new_blobs_text+=$(cat <<'EOF'
+  new_blobs_text+=$(cat <<EOF
 
 ${BUILDPACK}-buildpack/${filename}:
   size: ${filesize}

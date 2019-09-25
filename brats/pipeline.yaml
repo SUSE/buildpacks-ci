@@ -418,10 +418,16 @@ jobs:
         path: ci/brats/tasks/add-manifest-and-tag.sh
 - name: test-offline-<%= buildpack %>-buildpack-creation
   plan:
-  - get: s3.cf-buildpacks.suse.com-<%= buildpack %>
-    trigger: true
-    passed:
-    - add-manifest-and-tag-<%= buildpack %>-buildpack
+  - in_parallel:
+    - get: s3.cf-buildpacks.suse.com-<%= buildpack %>
+      trigger: true
+      passed:
+      - add-manifest-and-tag-<%= buildpack %>-buildpack
+    <% suse_stacks.each do |stack| %>
+    - get: s3.cf-buildpacks.suse.com-<%= buildpack %>-<%= stack %>
+      passed:
+      - add-manifest-and-tag-<%= buildpack %>-buildpack
+    <% end %>
   - task: run-offline-buildpack-packager
     config:
       platform: linux
@@ -448,12 +454,18 @@ jobs:
       trigger: true
       passed:
       - test-offline-<%= buildpack %>-buildpack-creation
+    <% suse_stacks.each do |stack| %>
+    - get: s3.cf-buildpacks.suse.com-<%= buildpack %>-<%= stack %>
+      passed:
+      - test-offline-<%= buildpack %>-buildpack-creation
+    <% end %>
   - task: trigger-final-releases-pipeline
     input_mapping:
       git.cf-buildpack-release: git.cf-<%= buildpack %>-buildpack-release
       <% suse_stacks.each do |stack| %>
-      s3.cf-buildpacks.suse.com.<%= stack %>: s3.cf-buildpacks.suse.com-<%= buildpack %>-<%= stack %>
+      s3.cf-buildpacks.suse.com-<%= stack %>: s3.cf-buildpacks.suse.com-<%= buildpack %>-<%= stack %>
       <% end %>
+
     config:
       platform: linux
       image_resource:
@@ -464,7 +476,7 @@ jobs:
         - name: ci
         - name: git.cf-buildpack-release
         <% suse_stacks.each do |stack| %>
-        - name: s3.cf-buildpacks.suse.com.<%= stack %>
+        - name: s3.cf-buildpacks.suse.com-<%= stack %>
         <% end %>
       params:
         BUILDPACK: <%= buildpack %>
