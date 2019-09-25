@@ -391,6 +391,9 @@ jobs:
     input_mapping:
       git.cf-buildpack: git.cf-<%= buildpack %>-buildpack
       s3.cf-buildpacks.suse.com: s3.cf-buildpacks.suse.com-<%= buildpack %>
+      <% suse_stacks.each do |stack| %>
+      s3.cf-buildpacks.suse.com-<%= stack %>: s3.cf-buildpacks.suse.com-<%= buildpack %>-<%= stack %>
+      <% end %>
     params:
       GITHUB_PRIVATE_KEY: |
         {{github-private-key}}
@@ -407,6 +410,9 @@ jobs:
       inputs:
         - name: ci
         - name: s3.cf-buildpacks.suse.com
+        <% suse_stacks.each do |stack| %>
+        - name: s3.cf-buildpacks.suse.com-<%= stack %>
+        <% end %>
         - name: git.cf-buildpack
       run:
         path: ci/brats/tasks/add-manifest-and-tag.sh
