@@ -43,12 +43,7 @@ fi
 if [ "${TEST_SUITE}" == "brats" ]; then
   scripts/${TEST_SUITE}.sh 2>&1 | tee ../mail-output/body-failed.txt
 else
-  # https://github.com/cloudfoundry/libbuildpack/pull/24/files
-  if [ "$CF_STACK" == "sle12" ]; then
-    export CF_STACK_DOCKER_IMAGE=$STAGING_DOCKER_REGISTRY/splatform/rootfs-$CF_STACK
-  else
-    export CF_STACK_DOCKER_IMAGE=registry.opensuse.org/cloud/platform/stack/rootfs/images/sle15:latest
-  fi
+  export CF_STACK_DOCKER_IMAGE=registry.opensuse.org/cloud/platform/stack/rootfs/images/sle15:latest
   # Mount cgroups to be able to call docker in docker
   echo "Setup CGroups"
   source $SCRIPT_DIR/helpers.sh
@@ -60,13 +55,6 @@ else
   sleep 10 # Give dockerd enough time to start
   docker version
   echo "Docker is up and running!"
-
-  if [ "$CF_STACK" == "sle12" ]; then
-    # Integration tests need access to the staging registry to fetch the sle12 stack
-    docker login \
-      -u $STAGING_DOCKER_REGISTRY_USERNAME \
-      -p $STAGING_DOCKER_REGISTRY_PASSWORD $STAGING_DOCKER_REGISTRY
-  fi
 
   # Do not fail on integration tests at the moment
   scripts/${TEST_SUITE}.sh 2>&1 | tee ../mail-output/body-failed.txt

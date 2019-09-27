@@ -1,5 +1,5 @@
 ---
-<% suse_stacks = ["sle12", "sle15"] %>
+<% suse_stacks = ["sle15"] %>
 <% buildpacks = ["ruby", "go", "python", "php", "nodejs", "staticfile", "nginx", "binary", "dotnet-core"] %>
 #resource_types:
 #- name: email
@@ -99,6 +99,7 @@ jobs:
     - get: s3.suse-buildpacks-staging-<%= buildpack %>-<%= stack %>
       trigger: true
     <% end %>
+
     - task: check
       config:
         platform: linux
@@ -283,9 +284,6 @@ jobs:
       params:
         BUILDPACK: <%= buildpack %>
         TEST_SUITE: integration
-        STAGING_DOCKER_REGISTRY: {{docker-internal-registry}}
-        STAGING_DOCKER_REGISTRY_USERNAME: {{docker-internal-username}}
-        STAGING_DOCKER_REGISTRY_PASSWORD: {{docker-internal-password}}
         PROXY_SCHEME: {{brats-proxy-scheme}}
         PROXY_PORT: {{brats-proxy-port}}
         PROXY_USERNAME: {{brats-proxy-username}}
