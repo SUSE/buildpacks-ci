@@ -2,7 +2,36 @@
 
 set -xe
 
-unzip s3.suse-buildpacks-staging/*.zip  manifest.yml
+export BASE_DIR=$(pwd)
+
+function update_urls_in_manifest {
+  sed -i "s|https://s3.amazonaws.com/${STAGING_BUCKET_NAME}|${PRODUCTION_BUCKET_URL}|" manifest.yml
+}
+
+function extract_manifest_from {
+  input=$1
+  unzip "${BASE_DIR}/${input}/"*.zip  manifest.yml
+}
+
+function generate_new_buildpack {
+  input=$1
+  pushd $input
+
+  extract_manifest_from $input
+  update_urls_in_manifest
+
+  original_filename=$(basename $(ls *.zip))
+  cp ${original_filename} production-buildpack.zip
+  zip -r production-buildpack.zip manifest.yml
+
+  new_checksum=$(sha256sum production-buildpack.zip | cut -d' ' -f1)
+  new_filename=$(echo ${original_filename/-pre-/-} | sed -e "s/[0-9a-f]\{8\}.zip/${new_checksum:0:8}.zip/")
+
+  mv production-buildpack.zip ${BASE_DIR}/out.${input}/${new_filename}
+  popd
+}
+
+extract_manifest_from s3.suse-buildpacks-staging
 
 # Copy artifacts
 staging_urls=`ruby -ryaml -ruri <<EOF
@@ -22,10 +51,7 @@ for url in ${staging_urls}; do
   aws s3 cp ${url} ${url/${STAGING_BUCKET_NAME}/${PRODUCTION_BUCKET_NAME}}
 done
 
-
-# Rewrite manifest
-sed -i "s|https://s3.amazonaws.com/${STAGING_BUCKET_NAME}|${PRODUCTION_BUCKET_URL}|" manifest.yml
-
+update_urls_in_manifest
 
 # Validate manifest
 pushd git.cf-buildpack
@@ -45,13 +71,8 @@ if ! buildpack-packager build -cached=true -any-stack; then
 fi
 popd
 
-
-# Generate new buildpack
-original_filename=$(basename $(ls s3.suse-buildpacks-staging/*.zip))
-cp s3.suse-buildpacks-staging/${original_filename} production-buildpack.zip
-zip -r production-buildpack.zip manifest.yml
-
-new_checksum=$(sha256sum production-buildpack.zip | cut -d' ' -f1)
-new_filename=$(echo ${original_filename/-pre-/-} | sed -e "s/[0-9a-f]\{8\}.zip/${new_checksum:0:8}.zip/")
-
-mv production-buildpack.zip s3-out/${new_filename}
+# Update manifests in buildpacks
+for bucket in s3.suse-buildpacks-staging*
+do
+  generate_new_buildpack $bucket
+done

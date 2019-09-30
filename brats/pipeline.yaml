@@ -1,4 +1,5 @@
 ---
+<% suse_stacks = ["sle15"] %>
 <% buildpacks = ["ruby", "go", "python", "php", "nodejs", "staticfile", "nginx", "binary", "dotnet-core"] %>
 #resource_types:
 #- name: email
@@ -55,6 +56,18 @@ resources:
     access_key_id: {{aws-access-key}}
     secret_access_key: {{aws-secret-key}}
     private_key: {{github-private-key}}
+<% suse_stacks.each do |stack| %>
+- name: s3.suse-buildpacks-staging-<%= buildpack %>-<%= stack %>
+  type: s3
+  source:
+    bucket: suse-buildpacks-staging
+    # TODO: Switch to just using '-' when all the buildpacks have a '-' version.
+    #regexp: <%= buildpack %>-buildpack-v([0-9-.]+)-pre-[0-9a-f]{8}\.zip
+    regexp: <%= buildpack %>[-_]buildpack-<%= stack %>-v([0-9-.]+)-pre-[0-9a-f]{8}\.zip
+    access_key_id: {{aws-access-key}}
+    secret_access_key: {{aws-secret-key}}
+    private_key: {{github-private-key}}
+<% end %>
 - name: s3.cf-buildpacks.suse.com-<%= buildpack %>
   type: s3
   source:
@@ -64,15 +77,84 @@ resources:
     regexp: <%= buildpack %>[-_]buildpack-v([0-9-.]+)-[0-9a-f]{8}\.zip
     access_key_id: {{aws-access-key}}
     secret_access_key: {{aws-secret-key}}
+<% suse_stacks.each do |stack| %>
+- name: s3.cf-buildpacks.suse.com-<%= buildpack %>-<%= stack %>
+  type: s3
+  source:
+    bucket: cf-buildpacks.suse.com
+    # TODO: Switch to just using '-' when all the buildpacks have a '-' version.
+    #regexp: <%= buildpack %>-buildpack-v([0-9-.]+)-[0-9a-f]{8}\.zip
+    regexp: <%= buildpack %>[-_]buildpack-<%= stack %>-v([0-9-.]+)-[0-9a-f]{8}\.zip
+    access_key_id: {{aws-access-key}}
+    secret_access_key: {{aws-secret-key}}
+<% end %>
 <% end %>
 jobs:
 <% buildpacks.each do |buildpack| %>
+- name: check-<%= buildpack %>-artifacts-published
+  plan:
+    - get: s3.suse-buildpacks-staging-<%= buildpack %>
+      trigger: true
+    <% suse_stacks.each do |stack| %>
+    - get: s3.suse-buildpacks-staging-<%= buildpack %>-<%= stack %>
+      trigger: true
+    <% end %>
+
+    - task: check
+      config:
+        platform: linux
+        image_resource:
+          type: registry-image
+          source:
+            repository: splatform/bosh-cli
+            tag: 761288a4a7202607e73bbcb57f6e89d940bf92be
+        inputs:
+          - name: s3.suse-buildpacks-staging-<%= buildpack %>
+          <% suse_stacks.each do |stack| %>
+          - name: s3.suse-buildpacks-staging-<%= buildpack %>-<%= stack %>
+          <% end %>
+        run:
+          path: bash
+          args:
+          - -exc
+          - |
+            set -e
+
+            file_version=""
+            for FILE in $(ls s3.suse-buildpacks-staging-*/*.zip); do
+              if [ "$file_version" != "" ]; then
+                [[ $FILE =~ -v([0-9\.]*) ]] && compare_version="${BASH_REMATCH[1]}"
+                if [ "$file_version" == "" ]; then
+                  echo "Couldn't match a version with our regexp (compare file). This is not expected. Exiting."
+                  exit 1
+                fi
+                if [ "$file_version" != "$compare_version" ]; then
+                  echo "The versions of the buildpack artifacts don't match. Maybe OBS hasn't finished publishing yet? Give it some time."
+                  exit 1
+                fi
+              else
+                [[ $FILE =~ -v([0-9\.]*) ]] && file_version="${BASH_REMATCH[1]}"
+                if [ "$file_version" == "" ]; then
+                  echo "Couldn't match a version with our regexp. This is not expected. Exiting."
+                  exit 1
+                fi
+              fi
+            done
+            echo "Versions match. All artifacts are available."
+            exit 0
 - name: run-<%= buildpack %>-brats
   serial_groups: [tests]
   plan:
   - in_parallel:
     - get: s3.suse-buildpacks-staging-<%= buildpack %>
       trigger: true
+      passed:
+      - check-<%= buildpack %>-artifacts-published
+    <% suse_stacks.each do |stack| %>
+    - get: s3.suse-buildpacks-staging-<%= buildpack %>-<%= stack %>
+      passed:
+      - check-<%= buildpack %>-artifacts-published
+    <% end %>
     - get: ci
     - get: git.cf-<%= buildpack %>-buildpack-readonly
     - get: gh-release.<%= buildpack %>-buildpack
@@ -150,6 +232,11 @@ jobs:
       trigger: true
       passed:
       - run-<%= buildpack %>-brats
+    <% suse_stacks.each do |stack| %>
+    - get: s3.suse-buildpacks-staging-<%= buildpack %>-<%= stack %>
+      passed:
+      - run-<%= buildpack %>-brats
+    <% end %>
     - get: ci
     - get: git.cf-<%= buildpack %>-buildpack-readonly
     - get: gh-release.<%= buildpack %>-buildpack
@@ -197,9 +284,6 @@ jobs:
       params:
         BUILDPACK: <%= buildpack %>
         TEST_SUITE: integration
-        STAGING_DOCKER_REGISTRY: {{docker-internal-registry}}
-        STAGING_DOCKER_REGISTRY_USERNAME: {{docker-internal-username}}
-        STAGING_DOCKER_REGISTRY_PASSWORD: {{docker-internal-password}}
         PROXY_SCHEME: {{brats-proxy-scheme}}
         PROXY_PORT: {{brats-proxy-port}}
         PROXY_USERNAME: {{brats-proxy-username}}
@@ -225,6 +309,7 @@ jobs:
 #      params:
 #        subject: mail-output/subject-failed.txt
 #        body: mail-output/body-failed.txt
+#
 - name: create-final-<%= buildpack %>-buildpack
   plan:
   - in_parallel:
@@ -232,12 +317,20 @@ jobs:
       trigger: true
       passed:
       - run-<%= buildpack %>-integration-tests
+    <% suse_stacks.each do |stack| %>
+    - get: s3.suse-buildpacks-staging-<%= buildpack %>-<%= stack %>
+      passed:
+      - run-<%= buildpack %>-integration-tests
+    <% end %>
     - get: ci
     - get: git.cf-<%= buildpack %>-buildpack
   - task: create-final-buildpack
     input_mapping:
       git.cf-buildpack: git.cf-<%= buildpack %>-buildpack
       s3.suse-buildpacks-staging: s3.suse-buildpacks-staging-<%= buildpack %>
+      <% suse_stacks.each do |stack| %>
+      s3.suse-buildpacks-staging-<%= stack %>: s3.suse-buildpacks-staging-<%= buildpack %>-<%= stack %>
+      <% end %>
     config:
       platform: linux
       image_resource:
@@ -248,8 +341,14 @@ jobs:
         - name: ci
         - name: git.cf-buildpack
         - name: s3.suse-buildpacks-staging
+        <% suse_stacks.each do |stack| %>
+        - name: s3.suse-buildpacks-staging-<%= stack %>
+        <% end %>
       outputs:
-        - name: s3-out
+        - name: out.s3.suse-buildpacks-staging
+        <% suse_stacks.each do |stack| %>
+        - name: out.s3.suse-buildpacks-staging-<%= stack %>
+        <% end %>
       params:
         BUILDPACK: <%= buildpack %>
         STAGING_BUCKET_NAME: suse-buildpacks-staging
@@ -262,8 +361,14 @@ jobs:
         path: ci/brats/tasks/create-final-buildpack.sh
   - put: s3.cf-buildpacks.suse.com-<%= buildpack %>
     params:
-      file: s3-out/*.zip
+      file: out.s3.suse-buildpacks-staging/*.zip
       acl: public-read
+  <% suse_stacks.each do |stack| %>
+  - put: s3.cf-buildpacks.suse.com-<%= buildpack %>-<%= stack %>
+    params:
+      file: out.s3.suse-buildpacks-staging-<%= stack %>/*.zip
+      acl: public-read
+  <% end %>
 - name: add-manifest-and-tag-<%= buildpack %>-buildpack
   plan:
   - in_parallel:
@@ -271,6 +376,11 @@ jobs:
       trigger: true
       passed:
       - create-final-<%= buildpack %>-buildpack
+    <% suse_stacks.each do |stack| %>
+    - get: s3.cf-buildpacks.suse.com-<%= buildpack %>-<%= stack %>
+      passed:
+      - create-final-<%= buildpack %>-buildpack
+    <% end %>
     - get: ci
     - get: git.cf-<%= buildpack %>-buildpack
       passed:
@@ -279,6 +389,9 @@ jobs:
     input_mapping:
       git.cf-buildpack: git.cf-<%= buildpack %>-buildpack
       s3.cf-buildpacks.suse.com: s3.cf-buildpacks.suse.com-<%= buildpack %>
+      <% suse_stacks.each do |stack| %>
+      s3.cf-buildpacks.suse.com-<%= stack %>: s3.cf-buildpacks.suse.com-<%= buildpack %>-<%= stack %>
+      <% end %>
     params:
       GITHUB_PRIVATE_KEY: |
         {{github-private-key}}
@@ -295,15 +408,24 @@ jobs:
       inputs:
         - name: ci
         - name: s3.cf-buildpacks.suse.com
+        <% suse_stacks.each do |stack| %>
+        - name: s3.cf-buildpacks.suse.com-<%= stack %>
+        <% end %>
         - name: git.cf-buildpack
       run:
         path: ci/brats/tasks/add-manifest-and-tag.sh
 - name: test-offline-<%= buildpack %>-buildpack-creation
   plan:
-  - get: s3.cf-buildpacks.suse.com-<%= buildpack %>
-    trigger: true
-    passed:
-    - add-manifest-and-tag-<%= buildpack %>-buildpack
+  - in_parallel:
+    - get: s3.cf-buildpacks.suse.com-<%= buildpack %>
+      trigger: true
+      passed:
+      - add-manifest-and-tag-<%= buildpack %>-buildpack
+    <% suse_stacks.each do |stack| %>
+    - get: s3.cf-buildpacks.suse.com-<%= buildpack %>-<%= stack %>
+      passed:
+      - add-manifest-and-tag-<%= buildpack %>-buildpack
+    <% end %>
   - task: run-offline-buildpack-packager
     config:
       platform: linux
@@ -330,10 +452,18 @@ jobs:
       trigger: true
       passed:
       - test-offline-<%= buildpack %>-buildpack-creation
+    <% suse_stacks.each do |stack| %>
+    - get: s3.cf-buildpacks.suse.com-<%= buildpack %>-<%= stack %>
+      passed:
+      - test-offline-<%= buildpack %>-buildpack-creation
+    <% end %>
   - task: trigger-final-releases-pipeline
     input_mapping:
       git.cf-buildpack-release: git.cf-<%= buildpack %>-buildpack-release
-      s3.cf-buildpacks.suse.com: s3.cf-buildpacks.suse.com-<%= buildpack %>
+      <% suse_stacks.each do |stack| %>
+      s3.cf-buildpacks.suse.com-<%= stack %>: s3.cf-buildpacks.suse.com-<%= buildpack %>-<%= stack %>
+      <% end %>
+
     config:
       platform: linux
       image_resource:
@@ -343,9 +473,12 @@ jobs:
       inputs:
         - name: ci
         - name: git.cf-buildpack-release
-        - name: s3.cf-buildpacks.suse.com
+        <% suse_stacks.each do |stack| %>
+        - name: s3.cf-buildpacks.suse.com-<%= stack %>
+        <% end %>
       params:
         BUILDPACK: <%= buildpack %>
+        STACKS: "<%= suse_stacks.join(' ') %>"
         GITHUB_PRIVATE_KEY: |
           {{github-private-key}}
         GIT_MAIL: {{github-username}}
