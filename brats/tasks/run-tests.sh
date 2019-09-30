@@ -47,12 +47,11 @@ else
   # Mount cgroups to be able to call docker in docker
   echo "Setup CGroups"
   source $SCRIPT_DIR/helpers.sh
-  permit_device_control
+  sanitize_cgroups
 
   echo "Starting docker daemon"
   # Start docker daemon and wait until it's up
-  dockerd &> /dev/null &
-  sleep 10 # Give dockerd enough time to start
+  start_docker
   docker version
   echo "Docker is up and running!"
 
