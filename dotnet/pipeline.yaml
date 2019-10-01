@@ -24,10 +24,9 @@ resources:
 - name: depwatcher
   type: git
   source:
-    uri: https://github.com/SUSE/cf-buildpacks-ci.git
+    uri: https://github.com/cloudfoundry/buildpacks-ci.git
     private_key: {{github-private-key}}
     paths: [dockerfiles/depwatcher]
-    branch: incorporate_env_into_depwatcher
 jobs:
 - name: build-dotnet-dependencies-from-release
   plan:
