@@ -4,9 +4,7 @@ set -euo pipefail
 
 GO_VERSION="1.12.4"
 
-if [ $CF_STACK == "cflinuxfs2" ]; then
-    GO_SHA256="1a6d80b16a845f6a9692857a5978c0d69a89b58af4d50f66209435beafb07b5b"
-elif [ $CF_STACK == "cflinuxfs3" ]; then
+if [ $CF_STACK == "cflinuxfs3" ]; then
     GO_SHA256="e68279204493307782c51105c3dd5254ab066d0b5d9aafa3ce3a2878ebbef53f"
 elif [ $CF_STACK == "sle15" ]; then
     GO_SHA256="639d9c3dc546735ba840c9d54c9fefe7bdd0902f990c5368cb161918609db643"
@@ -20,7 +18,7 @@ export GoInstallDir="/tmp/go$GO_VERSION"
 mkdir -p $GoInstallDir
 
 if [ ! -f $GoInstallDir/go/bin/go ]; then
-  if [[ "$CF_STACK" =~ cflinuxfs[23] ]]; then
+  if [[ "$CF_STACK" =~ cflinuxfs3 ]]; then
     URL=https://buildpacks.cloudfoundry.org/dependencies/go/go${GO_VERSION}.linux-amd64-${CF_STACK}-${GO_SHA256:0:8}.tar.gz
   elif [[ "$CF_STACK" == "sle15" ]]; then
     URL=https://cf-buildpacks.suse.com/dependencies/go/go-${GO_VERSION}-linux-amd64-${CF_STACK}-${GO_SHA256:0:8}.tgz
