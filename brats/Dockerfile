@@ -1,9 +1,9 @@
 # docker build -t splatform/concourse-brats .
-FROM opensuse/leap:15.0
+FROM opensuse/leap:15.1
 
 RUN zypper ar https://download.opensuse.org/repositories/Cloud:/Platform:/buildpacks:/build-requires/openSUSE_Leap_15.0/ buildpacks-build-requires
 RUN zypper --gpg-auto-import-keys -n in --from=buildpacks-build-requires go go-buildpack-packager
-RUN zypper ar https://download.opensuse.org/repositories/Cloud:/Platform:/Tools/openSUSE_Leap_15.0/ cf-cli
+RUN zypper ar https://download.opensuse.org/repositories/Cloud:/Tools/openSUSE_Leap_15.1/Cloud:Tools.repo
 RUN zypper --gpg-auto-import-keys -n in cf-cli
 
 # Needed for integration tests
