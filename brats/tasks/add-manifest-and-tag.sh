@@ -45,11 +45,16 @@ fi
 popd
 
 releases=""
-# Iterate over associated buildpacks (ignore the non-associated one)
-for bucket in s3.cf-buildpacks.suse.com-*
-do
-  releases="${releases}\n\n$(extract_file_name_and_checksum_from $bucket)"
-done
+if [[ "${BUILDPACK}" != "java" ]]; then
+  # Iterate over associated buildpacks (ignore the non-associated one)
+  for bucket in s3.cf-buildpacks.suse.com-*
+  do
+    releases="${releases}\n\n$(extract_file_name_and_checksum_from $bucket)"
+  done
+else
+  # Java buildpacks are treated differently, they do not have a manifest.yml
+  releases="${releases}\n\n$(extract_file_name_and_checksum_from s3.cf-buildpacks.suse.com)"
+fi
 
 message=$(cat <<MESSAGE
 ${suse_tag}
