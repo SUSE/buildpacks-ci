@@ -2,6 +2,25 @@
 
 set -e
 
+function get_blob_yml_from {
+  s3_dir="$1"
+
+  pushd ${s3_dir}
+    filename=$(ls *.zip)
+    filesize=$(du -b ${filename} | awk '{print $1}')
+    checksum=$(sha256sum ${filename} | cut -d' ' -f1)
+  popd
+
+  new_blobs_text+=$(cat <<EOF
+
+${BUILDPACK}-buildpack/${filename}:
+  size: ${filesize}
+  object_id: ${filename}
+  sha: sha256:${checksum}
+EOF
+)
+}
+
 # Get rid of quotes in the beginning and end
 export GITHUB_PRIVATE_KEY=${GITHUB_PRIVATE_KEY:1:-1}
 
@@ -14,23 +33,13 @@ git config --global user.name "${GIT_USER}"
 
 new_blobs_text="---"
 
-for stack in $(echo $STACKS); do
-  # Update the bosh release repo
-  pushd s3.cf-buildpacks.suse.com-${stack}
-  filename=$(ls *.zip)
-  filesize=$(du -b ${filename} | awk '{print $1}')
-  checksum=$(sha256sum ${filename} | cut -d' ' -f1)
-  popd
-
-  new_blobs_text+=$(cat <<EOF
-
-${BUILDPACK}-buildpack/${filename}:
-  size: ${filesize}
-  object_id: ${filename}
-  sha: sha256:${checksum}
-EOF
-)
-done
+if [ -n "$STACKS" ]; then
+  for stack in $(echo $STACKS); do
+    get_blob_yml_from s3.cf-buildpacks.suse.com-${stack}
+  done
+else
+  get_blob_yml_from s3.cf-buildpacks.suse.com
+fi
 
 pushd git.cf-buildpack-release
 git checkout master
