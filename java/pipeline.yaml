@@ -49,7 +49,7 @@ resources:
 jobs:
 - name: rebase-java-buildpack-against-upstream
   plan:
-  - aggregate:
+  - in_parallel:
     - get: java-buildpack-gh-release
       trigger: true
     - get: git.cf-java-buildpack
@@ -80,7 +80,7 @@ jobs:
         path: ci/buildpacks/tasks/rebase-master.sh
 - name: wait-for-git-resource
   plan:
-  - aggregate:
+  - in_parallel:
     - get: java-buildpack-gh-release
       passed:
         - rebase-java-buildpack-against-upstream
@@ -97,7 +97,7 @@ jobs:
         args: [6m]
 - name: create-java
   plan:
-  - aggregate:
+  - in_parallel:
     - get: java-buildpack-gh-release
       passed:
         - wait-for-git-resource
@@ -131,7 +131,7 @@ jobs:
           file: out/java-buildpack*.zip
 - name: add-manifest-and-tag-java-buildpack
   plan:
-  - aggregate:
+  - in_parallel:
     - get: s3.cf-buildpacks.suse.com
       trigger: true
       passed:
@@ -187,7 +187,7 @@ jobs:
         body_text: "Building the offline buildpack with our packager failed. Check Concourse for the results."
 - name: update-java-buildpack-release
   plan:
-  - aggregate:
+  - in_parallel:
     - get: ci
     - get: git.cf-java-buildpack-release
     - get: s3.cf-buildpacks.suse.com
