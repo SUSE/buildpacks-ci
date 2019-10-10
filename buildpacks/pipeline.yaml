@@ -185,7 +185,7 @@ jobs:
       OBS_USERNAME:  {{obs-username}}
       OBS_PASSWORD:  {{obs-password}}
       WAITING_TIME_SECS: 60
-      NUMBER_OF_RETRIES: 15
+      NUMBER_OF_RETRIES: 120
     config:
       platform: linux
       image_resource:
