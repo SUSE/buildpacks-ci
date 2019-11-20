@@ -25,6 +25,11 @@ resources:
   source:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
+- name: catapult
+  type: git
+  source:
+    uri: git@github.com:SUSE/catapult.git
+    private_key: {{github-private-key}}
 <% buildpacks.each do |buildpack| %>
 - name: gh-release.<%= buildpack %>-buildpack
   type: github-release
@@ -90,6 +95,40 @@ resources:
 <% end %>
 <% end %>
 jobs:
+# When a cluster is already there, we don't clean up and just reuse it. It is useful to be
+# able to redeploy the cluster manually in cases like:
+# - We need a latest version of CAP deployed
+# - The cluster is broken because of some previous operation
+# This task can be manually triggered to force a redeploy of the brats cluster.
+- name: force_redeploy_cluster
+  plan:
+  - in_parallel:
+    - get: ci
+    - get: catapult
+  - task: deploy-cluster
+    privileged: true
+    config:
+      platform: linux
+      image_resource:
+        type: registry-image
+        source:
+          repository: splatform/catapult
+      inputs:
+        - name: catapult
+        - name: ci
+      params:
+        DEFAULT_STACK: sle15
+        DOCKER_ORG: cap-staging
+        SCF_CHART: "https://s3.amazonaws.com/cap-release-archives/prs/PR-2686-scf-sle-2.18.0.1%2Bcf9.5.0.288.gef2d9512.zip"
+        ENABLE_EIRINI: false
+        DIEGO_SIZING: 3
+        EKCP_HOST: {{ekcp-host}}
+        EKCP_PROXY: 1
+        EKCP_DOMAIN: nip.io
+        KIND_VERSION: 0.2.1
+        CLUSTER_NAME: diegobrats
+      run:
+        path: ci/brats/tasks/deploy-cluster.sh
 <% buildpacks.each do |buildpack| %>
 - name: check-<%= buildpack %>-artifacts-published
   plan:
@@ -158,21 +197,25 @@ jobs:
     - get: ci
     - get: git.cf-<%= buildpack %>-buildpack-readonly
     - get: gh-release.<%= buildpack %>-buildpack
+    - get: catapult
   - task: cleanup
     config:
       platform: linux
       image_resource:
         type: registry-image
         source:
-          repository: splatform/concourse-brats
+          repository: splatform/catapult
       inputs:
         - name: ci
+        - name: catapult
       params:
-        CF_ENDPOINT: {{brats-cf-endpoint}}
-        CF_USERNAME: {{brats-cf-username}}
-        CF_PASSWORD: {{brats-cf-password}}
-        CF_ORG: {{brats-cf-org}}
-        CF_SPACE: {{brats-cf-space}}
+        DEFAULT_STACK: sle15
+        EKCP_HOST: {{ekcp-host}}
+        EKCP_PROXY: 1
+        EKCP_DOMAIN: nip.io
+        CF_STACK: {{brats-cf-stack}}
+        KIND_VERSION: 0.2.1
+        CLUSTER_NAME: diegobrats
       run:
         path: ci/brats/tasks/cleanup.sh
 #    on_failure:
@@ -190,33 +233,25 @@ jobs:
       image_resource:
         type: registry-image
         source:
-          repository: splatform/concourse-brats
+          repository: splatform/catapult
       inputs:
         - name: git.cf-buildpack
         - name: gh-release.buildpack
         - name: s3.suse-buildpacks-staging
+        - name: catapult
         - name: ci
       outputs:
         - name: mail-output
       params:
-        BUILDPACK: <%= buildpack %>
-        TEST_SUITE: brats
-        PROXY_SCHEME: {{brats-proxy-scheme}}
-        PROXY_PORT: {{brats-proxy-port}}
-        PROXY_USERNAME: {{brats-proxy-username}}
-        PROXY_PASSWORD: {{brats-proxy-password}}
-        PROXY_HOST: {{brats-proxy-host}}
+        BRATS_BUILDPACK: <%= buildpack %>
         CF_STACK: {{brats-cf-stack}}
-        CF_ENDPOINT: {{brats-cf-endpoint}}
-        CF_USERNAME: {{brats-cf-username}}
-        CF_PASSWORD: {{brats-cf-password}}
-        CF_ORG: {{brats-cf-org}}
-        CF_SPACE: {{brats-cf-space}}
-        PROJECT: {{obs-buildpacks-staging-project}}
-        GIT_MAIL: {{github-username}}
-        GIT_USER: suse-cf-ci-bot
-        GINKGO_NODES: 5
+        GINKGO_NODES: 2
         GINKGO_ATTEMPTS: 3
+        EKCP_HOST: {{ekcp-host}}
+        EKCP_DOMAIN: nip.io
+        KIND_VERSION: 0.2.1
+        CLUSTER_NAME: diegobrats
+        BRATS_TEST_SUITE: brats
       run:
         path: ci/brats/tasks/run-tests.sh
 #    on_failure:
@@ -237,6 +272,7 @@ jobs:
       passed:
       - run-<%= buildpack %>-brats
     <% end %>
+    - get: catapult
     - get: ci
     - get: git.cf-<%= buildpack %>-buildpack-readonly
     - get: gh-release.<%= buildpack %>-buildpack
@@ -246,15 +282,21 @@ jobs:
       image_resource:
         type: registry-image
         source:
-          repository: splatform/concourse-brats
+          repository: splatform/catapult
       inputs:
         - name: ci
+        - name: catapult
       params:
         CF_ENDPOINT: {{brats-cf-endpoint}}
+        EKCP_HOST: {{ekcp-host}}
+        EKCP_DOMAIN: nip.io
         CF_USERNAME: {{brats-cf-username}}
+        CF_STACK: {{brats-cf-stack}}
         CF_PASSWORD: {{brats-cf-password}}
         CF_ORG: {{brats-cf-org}}
         CF_SPACE: {{brats-cf-space}}
+        CLUSTER_NAME: diegobrats
+        BRATS_BUILDPACK: <%= buildpack %>
       run:
         path: ci/brats/tasks/cleanup.sh
 #    on_failure:
@@ -273,17 +315,19 @@ jobs:
       image_resource:
         type: registry-image
         source:
-          repository: splatform/concourse-brats
+          repository: splatform/catapult
       inputs:
         - name: git.cf-buildpack
         - name: gh-release.buildpack
         - name: s3.suse-buildpacks-staging
         - name: ci
+        - name: catapult
       outputs:
         - name: mail-output
       params:
         BUILDPACK: <%= buildpack %>
-        TEST_SUITE: integration
+        BRATS_BUILDPACK: <%= buildpack %>
+        BRATS_TEST_SUITE: integration
         PROXY_SCHEME: {{brats-proxy-scheme}}
         PROXY_PORT: {{brats-proxy-port}}
         PROXY_USERNAME: {{brats-proxy-username}}
@@ -300,8 +344,13 @@ jobs:
         GIT_MAIL: {{github-username}}
         GIT_USER: suse-cf-ci-bot
         COMPOSER_GITHUB_OAUTH_TOKEN: {{github-limited-token}} # Needed for PHP integration tests
-        GINKGO_ATTEMPTS: 3
-        GINKGO_NODES: 5
+        GINKGO_ATTEMPTS: 5
+        GINKGO_NODES: 2
+        EKCP_HOST: {{ekcp-host}}
+        EKCP_PROXY: 1
+        EKCP_DOMAIN: nip.io
+        KIND_VERSION: 0.2.1
+        CLUSTER_NAME: diegobrats
       run:
         path: ci/brats/tasks/run-tests.sh
 #    on_failure:
