@@ -121,11 +121,10 @@ jobs:
         DOCKER_ORG: cap-staging
         SCF_CHART: "https://s3.amazonaws.com/cap-release-archives/prs/PR-2686-scf-sle-2.18.0.1%2Bcf9.5.0.288.gef2d9512.zip"
         ENABLE_EIRINI: false
-        DIEGO_SIZING: 3
+        DIEGO_SIZING: 2
         EKCP_HOST: {{ekcp-host}}
-        EKCP_PROXY: 1
+        HELM_VERSION: v2.16.0
         EKCP_DOMAIN: nip.io
-        KIND_VERSION: 0.2.1
         CLUSTER_NAME: diegobrats
       run:
         path: ci/brats/tasks/deploy-cluster.sh
@@ -214,7 +213,6 @@ jobs:
         EKCP_PROXY: 1
         EKCP_DOMAIN: nip.io
         CF_STACK: {{brats-cf-stack}}
-        KIND_VERSION: 0.2.1
         CLUSTER_NAME: diegobrats
       run:
         path: ci/brats/tasks/cleanup.sh
