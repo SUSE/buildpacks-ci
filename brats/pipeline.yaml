@@ -118,8 +118,8 @@ jobs:
         - name: ci
       params:
         DEFAULT_STACK: sle15
-        DOCKER_ORG: cap-staging
-        SCF_CHART: "https://s3.amazonaws.com/cap-release-archives/prs/PR-2686-scf-sle-2.18.0.1%2Bcf9.5.0.288.gef2d9512.zip"
+        DOCKER_ORG: cap
+        SCF_CHART: "https://github.com/SUSE/scf/releases/download/2.19.1/scf-sle-2.19.1+cf9.5.0.0.gd8c18ede.zip"
         ENABLE_EIRINI: false
         DIEGO_SIZING: 2
         EKCP_HOST: {{ekcp-host}}
@@ -243,11 +243,10 @@ jobs:
       params:
         BRATS_BUILDPACK: <%= buildpack %>
         CF_STACK: {{brats-cf-stack}}
-        GINKGO_NODES: 2
+        GINKGO_NODES: 1
         GINKGO_ATTEMPTS: 3
         EKCP_HOST: {{ekcp-host}}
         EKCP_DOMAIN: nip.io
-        KIND_VERSION: 0.2.1
         CLUSTER_NAME: diegobrats
         BRATS_TEST_SUITE: brats
       run:
@@ -343,11 +342,10 @@ jobs:
         GIT_USER: suse-cf-ci-bot
         COMPOSER_GITHUB_OAUTH_TOKEN: {{github-limited-token}} # Needed for PHP integration tests
         GINKGO_ATTEMPTS: 5
-        GINKGO_NODES: 2
+        GINKGO_NODES: 1
         EKCP_HOST: {{ekcp-host}}
         EKCP_PROXY: 1
         EKCP_DOMAIN: nip.io
-        KIND_VERSION: 0.2.1
         CLUSTER_NAME: diegobrats
       run:
         path: ci/brats/tasks/run-tests.sh
