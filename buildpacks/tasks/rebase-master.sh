@@ -97,5 +97,6 @@ pushd git.cf-buildpack
 
   # Fork
   git checkout -b ${UPSTREAM_VERSION}
-  git push origin ${UPSTREAM_VERSION}
+  # Do not fail if the version was already released before
+  git push origin ${UPSTREAM_VERSION} || exit 0
 popd
