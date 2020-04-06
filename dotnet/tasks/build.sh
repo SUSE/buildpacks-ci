@@ -169,7 +169,11 @@ if [ "$BUILD" = true ]; then
 
 		for s in "${ROOTDIR}/${i}-src/source/.dotnet_stage0" "$HOME/.dotnet" "$HOME/.nuget" "$HOME/.local/share/NuGet";
 		do
-			mv "${s}" "${ROOTDIR}"/"${i}"-src/cache/
+
+			if [ -d "${s}" ]; then
+				mv "${s}" "${ROOTDIR}"/"${i}"-src/cache/
+			fi
+
 		done
 
 		# Strip dlls and exes from the sources
