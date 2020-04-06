@@ -51,7 +51,7 @@ function build() {
 	    if [[ "$MAJOR" -eq "2" ]]; then
 		  [ ! -d "git.dotnet-cli" ] && git clone https://github.com/dotnet/cli git.dotnet-cli
 		else
-		  [ ! -d "git.dotnet-cli" ] && git clone https://github.com/dotnet/sdk git.dotnet-cli
+		  [ ! -d "git.dotnet-cli" ] && git clone https://github.com/dotnet/core-sdk git.dotnet-cli
 		fi
 		pushd git.dotnet-cli
 			echo "Trying to checkout Dotnet version: ${version}"
