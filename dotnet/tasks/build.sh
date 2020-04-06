@@ -129,7 +129,7 @@ function build() {
 			[ -d "bin/2/${OS}-x64/dotnet" ] && mv bin/2/${OS}-x64/dotnet ${out}
         else
 		    # Since dotnet 3.x, upstream doesn't seem to handle building and extraction anymore: https://github.com/cloudfoundry/buildpacks-ci/commit/ea6fb512335d32980018047e7d2451ae6cf1ea3b
-            [ -d "artifacts/tmp/Debug/dotnet" ] && mv artifacts/tmp/Debug/dotnet ${out}
+            [ -d "artifacts/bin/redist/Debug/dotnet" ] && mv artifacts/bin/redist/Debug/dotnet ${out}
         fi
 	popd
 }
