@@ -124,8 +124,13 @@ function build() {
 		# NOTE: To run a full build, including of self-tests: bash run-build.sh
 
 		# Handles: https://github.com/cloudfoundry/buildpacks-ci/blob/2506ca13addb599c4fda9aaa68d5ba8586e3f40d/tasks/build-binary-new/builder.rb#L190
-		[ -d "artifacts/${OS}-x64/stage2" ] && mv artifacts/${OS}-x64/stage2 ${out}
-		[ -d "bin/2/${OS}-x64/dotnet" ] && mv bin/2/${OS}-x64/dotnet ${out}
+        if [[ "$MAJOR" -eq "2" ]]; then
+			[ -d "artifacts/${OS}-x64/stage2" ] && mv artifacts/${OS}-x64/stage2 ${out}
+			[ -d "bin/2/${OS}-x64/dotnet" ] && mv bin/2/${OS}-x64/dotnet ${out}
+        else
+		    # Since dotnet 3.x, upstream doesn't seem to handle building and extraction anymore: https://github.com/cloudfoundry/buildpacks-ci/commit/ea6fb512335d32980018047e7d2451ae6cf1ea3b
+            [ -d "artifacts/tmp/Debug/dotnet" ] && mv artifacts/tmp/Debug/dotnet ${out}
+        fi
 	popd
 }
 
