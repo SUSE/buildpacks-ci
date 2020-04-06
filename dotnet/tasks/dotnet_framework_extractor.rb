@@ -33,8 +33,10 @@ class DotnetFrameworkExtractor
 
   def extract_aspnetcore(remove_frameworks)
     aspcorenet_tar = File.join(@base_dir, "dotnet-aspnetcore.tar.xz")
+    dirs = %w(Microsoft.AspNetCore.App Microsoft.AspNetCore.All)
+    dirs.keep_if { |dir| Dir.exist?(File.join(@sdk_dir,"shared", dir)) }
 
-    version = extract_framework_dep(@sdk_dir, aspcorenet_tar, %w(Microsoft.AspNetCore.App Microsoft.AspNetCore.All), remove_frameworks)
+    version = extract_framework_dep(@sdk_dir, aspcorenet_tar, dirs, remove_frameworks)
 
     create_dependency(aspcorenet_tar, version, 'dotnet-aspnetcore')
   end
