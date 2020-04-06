@@ -111,7 +111,11 @@ function build() {
 			echo "Could not extract version, skipping patch"
 		fi
 
-		bash build.sh /t:Compile
+		if [[ "$MAJOR" -eq "2" ]]; then
+			bash build.sh /t:Compile
+		else
+			bash build.sh
+		fi
 
 		# NOTE: To run a full build, including of self-tests: bash run-build.sh
 
