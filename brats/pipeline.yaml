@@ -25,6 +25,7 @@ resources:
   source:
     uri: git@github.com:SUSE/buildpacks-ci.git
     private_key: {{github-private-key}}
+    branch: restore_old_test_setup
 <% buildpacks.each do |buildpack| %>
 - name: gh-release.<%= buildpack %>-buildpack
   type: github-release
