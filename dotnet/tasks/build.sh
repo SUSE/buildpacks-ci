@@ -22,7 +22,7 @@ export DropSuffix="true"
 
 if [ "$STACK" == "sle15" ]; then
 	zypper ar 'http://download.suse.de/ibs/SUSE:/SLE-15:/GA/standard/SUSE:SLE-15:GA.repo'
-	zypper --gpg-auto-import-keys -n in awk libevent-devel aws-cli zlib-devel libcurl-devel
+	zypper --gpg-auto-import-keys -n in awk libevent-devel aws-cli zlib-devel libcurl-devel lttng-tools
 fi
 
 function get_commit_sha() {
