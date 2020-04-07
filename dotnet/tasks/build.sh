@@ -111,6 +111,14 @@ function build() {
 				git cherry-pick 257cf7a4784cc925742ef4e2706e752ab1f578b0
 			fi
 
+
+			if [[ "$MAJOR" -eq "3" ]] && \
+			   [[ "$MINOR" -eq "1" ]] && \
+			   [[ "$PATCH" -eq "101" ]]
+			then
+				git apply "$ROOTDIR/ci/dotnet/patches/fix_dotnet_deps_3_1_101.patch"
+			fi
+
 		else
 			echo "Could not extract version, skipping patch"
 		fi
