@@ -111,6 +111,17 @@ function build() {
 				git cherry-pick 257cf7a4784cc925742ef4e2706e752ab1f578b0
 			fi
 
+			if [[ "$MAJOR" -eq "2" ]] && \
+			   [[ "$MINOR" -eq "1" ]] && \
+			   [[ "$PATCH" -eq "805" ]]
+			then
+				# While 2.1.805 is available in blobs https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/2.1/releases.json,
+				# at the time of writing there is no official tag in the dotnet-cli repository.
+				# The branch https://github.com/dotnet/sdk/commits/release/2.1.8xx shows that's the matching commit
+				# given also the dependency versions that upstream repackaged (see https://github.com/cloudfoundry/dotnet-core-buildpack/releases/tag/v2.3.8 )
+				# Depwatcher stopped to give sha back, as now upstream consumes blobs directly
+				git checkout 685649c937ac5d06b801a43fb80e625be75d4aec
+			fi
 
 			if [[ "$MAJOR" -eq "3" ]] && \
 			   [[ "$MINOR" -eq "1" ]] && \
