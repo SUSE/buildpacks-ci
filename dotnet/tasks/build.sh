@@ -47,6 +47,20 @@ function build() {
 	local sha=$2
 	local out=$3
 
+	regex_extract_version="([0-9]+)\.([0-9]+)\.([0-9]+)"
+	if [[ $version =~ $regex_extract_version ]]
+	then
+		MAJOR="${BASH_REMATCH[1]}"
+		MINOR="${BASH_REMATCH[2]}"
+		PATCH="${BASH_REMATCH[3]}"
+		echo "Major: $MAJOR"
+		echo "Minor: $MINOR"
+		echo "PATCH ver: $PATCH"
+	else
+		echo "Could not extract semver version from $version, bailing out"
+		exit 1
+	fi
+
 	if [ "$LOCAL_BUILD" = true ]; then
 	    if [[ "$MAJOR" -eq "2" ]]; then
 		  [ ! -d "git.dotnet-cli" ] && git clone https://github.com/dotnet/cli git.dotnet-cli
@@ -77,62 +91,49 @@ function build() {
 	pushd git.dotnet-cli
 
 		# See https://github.com/cloudfoundry/buildpacks-ci/blob/2506ca13addb599c4fda9aaa68d5ba8586e3f40d/tasks/build-binary-new/builder.rb#L177
-		regex_extract_version="([0-9]+)\.([0-9]+)\.([0-9]+)"
-		if [[ $version =~ $regex_extract_version ]]
+		if [[ "$MAJOR" -eq "2" ]] && \
+			[[ "$MINOR" -eq "1" ]] && \
+			[[ "$PATCH" -ge "4" ]] && \
+			[[ "$PATCH" -lt "300" ]]
 		then
-			MAJOR="${BASH_REMATCH[1]}"
-			MINOR="${BASH_REMATCH[2]}"
-			PATCH="${BASH_REMATCH[3]}"
-			echo "Major: $MAJOR"
-			echo "Minor: $MINOR"
-			echo "PATCH ver: $PATCH"
-
-			if [[ "$MAJOR" -eq "2" ]] && \
-			   [[ "$MINOR" -eq "1" ]] && \
-			   [[ "$PATCH" -ge "4" ]] && \
-			   [[ "$PATCH" -lt "300" ]]
-			then
-				sed -i 's/WriteDynamicPropsToStaticPropsFiles "\${args\[\@\]}"/WriteDynamicPropsToStaticPropsFiles/' run-build.sh
-			fi
-
-			if [[ "$MAJOR" -eq "2" ]] && \
-			   [[ "$MINOR" -eq "0" ]] && \
-			   [[ "$PATCH" -eq "3" ]]
-			then
-				sed -i 's/sles/opensuse/' /etc/os-release
-				sed -i 's/12.3/42.1/' /etc/os-release
-			fi
-
-			if [[ "$MAJOR" -eq "2" ]] && \
-			   [[ "$MINOR" -eq "1" ]] && \
-			   [[ "$PATCH" -eq "401" ]]
-			then
-				# Handles: https://github.com/cloudfoundry/buildpacks-ci/blob/2506ca13addb599c4fda9aaa68d5ba8586e3f40d/tasks/build-binary-new/builder.rb#L164
-				git cherry-pick 257cf7a4784cc925742ef4e2706e752ab1f578b0
-			fi
-
-			if [[ "$MAJOR" -eq "2" ]] && \
-			   [[ "$MINOR" -eq "1" ]] && \
-			   [[ "$PATCH" -eq "805" ]]
-			then
-				# While 2.1.805 is available in blobs https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/2.1/releases.json,
-				# at the time of writing there is no official tag in the dotnet-cli repository.
-				# The branch https://github.com/dotnet/sdk/commits/release/2.1.8xx shows that's the matching commit
-				# given also the dependency versions that upstream repackaged (see https://github.com/cloudfoundry/dotnet-core-buildpack/releases/tag/v2.3.8 )
-				# Depwatcher stopped to give sha back, as now upstream consumes blobs directly
-				git checkout 685649c937ac5d06b801a43fb80e625be75d4aec
-			fi
-
-			if [[ "$MAJOR" -eq "3" ]] && \
-			   [[ "$MINOR" -eq "1" ]] && \
-			   [[ "$PATCH" -eq "101" ]]
-			then
-				git apply "$ROOTDIR/ci/dotnet/patches/fix_dotnet_deps_3_1_101.patch"
-			fi
-
-		else
-			echo "Could not extract version, skipping patch"
+			sed -i 's/WriteDynamicPropsToStaticPropsFiles "\${args\[\@\]}"/WriteDynamicPropsToStaticPropsFiles/' run-build.sh
 		fi
+
+		if [[ "$MAJOR" -eq "2" ]] && \
+			[[ "$MINOR" -eq "0" ]] && \
+			[[ "$PATCH" -eq "3" ]]
+		then
+			sed -i 's/sles/opensuse/' /etc/os-release
+			sed -i 's/12.3/42.1/' /etc/os-release
+		fi
+
+		if [[ "$MAJOR" -eq "2" ]] && \
+			[[ "$MINOR" -eq "1" ]] && \
+			[[ "$PATCH" -eq "401" ]]
+		then
+			# Handles: https://github.com/cloudfoundry/buildpacks-ci/blob/2506ca13addb599c4fda9aaa68d5ba8586e3f40d/tasks/build-binary-new/builder.rb#L164
+			git cherry-pick 257cf7a4784cc925742ef4e2706e752ab1f578b0
+		fi
+
+		if [[ "$MAJOR" -eq "2" ]] && \
+			[[ "$MINOR" -eq "1" ]] && \
+			[[ "$PATCH" -eq "805" ]]
+		then
+			# While 2.1.805 is available in blobs https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/2.1/releases.json,
+			# at the time of writing there is no official tag in the dotnet-cli repository.
+			# The branch https://github.com/dotnet/sdk/commits/release/2.1.8xx shows that's the matching commit
+			# given also the dependency versions that upstream repackaged (see https://github.com/cloudfoundry/dotnet-core-buildpack/releases/tag/v2.3.8 )
+			# Depwatcher stopped to give sha back, as now upstream consumes blobs directly
+			git checkout 685649c937ac5d06b801a43fb80e625be75d4aec
+		fi
+
+		if [[ "$MAJOR" -eq "3" ]] && \
+			[[ "$MINOR" -eq "1" ]] && \
+			[[ "$PATCH" -eq "101" ]]
+		then
+			git apply "$ROOTDIR/ci/dotnet/patches/fix_dotnet_deps_3_1_101.patch"
+		fi
+
 
 		if [[ "$MAJOR" -eq "2" ]]; then
 			bash build.sh /t:Compile
