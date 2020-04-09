@@ -69,7 +69,16 @@ function build() {
 		fi
 		pushd git.dotnet-cli
 			echo "Trying to checkout Dotnet version: ${version}"
-			git checkout v${version} || true
+			set +e
+			if git rev-parse v${version}+dependencies >/dev/null 2>&1; then
+				git checkout v${version}+dependencies
+			elif git rev-parse v${version} >/dev/null 2>&1; then
+				git checkout v${version}
+			else
+				echo "No branch exists for that version. Bailing out"
+				exit 1
+			fi
+			set -e
 		popd
 	fi
 
