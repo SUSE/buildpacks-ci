@@ -143,6 +143,13 @@ function build() {
 			git apply "$ROOTDIR/ci/dotnet/patches/fix_dotnet_deps_3_1_101.patch"
 		fi
 
+		if [[ "$MAJOR" -eq "3" ]] && \
+			[[ "$MINOR" -eq "1" ]] && \
+			[[ "$PATCH" -eq "302" ]]
+		then
+			git apply "$ROOTDIR/ci/dotnet/patches/fix_dotnet_deps_3_1_302.patch"
+		fi
+
 
 		if [[ "$MAJOR" -eq "2" ]]; then
 			bash build.sh /t:Compile
