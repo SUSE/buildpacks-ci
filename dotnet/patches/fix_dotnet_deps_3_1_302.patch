@@ -13,3 +13,16 @@ index 76d5eec55..0e96be183 100644
      <add key="nuget.org" value="https://api.nuget.org/v3/index.json" />
      <add key="dotnet-tools" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet-tools/nuget/v3/index.json" />
      <add key="dotnet3.1" value="https://pkgs.dev.azure.com/dnceng/public/_packaging/dotnet3.1/nuget/v3/index.json" />
+diff --git a/global.json b/global.json
+index efa4c4d7a..a1e84eb33 100644
+--- a/global.json
++++ b/global.json
+@@ -6,7 +6,7 @@
+     }
+   },
+   "msbuild-sdks": {
+-    "Microsoft.DotNet.Arcade.Sdk": "1.0.0-beta.20113.5",
++    "Microsoft.DotNet.Arcade.Sdk": "1.0.0-beta.19607.3",
+     "Microsoft.DotNet.Helix.Sdk": "2.0.0-beta.20113.5"
+   }
+ }
