@@ -1,7 +1,7 @@
 #!/bin/bash
 
 common() {
-	fly -t ${TARGET} set-pipeline -p ${2} -c <(erb ${1}/pipeline.yaml) -l ${CONCOURSE_SECRETS_FILE} && \
+	fly -t ${TARGET} set-pipeline -p ${2} -c <(erb ${1}/${3:-pipeline.yaml}) -l ${CONCOURSE_SECRETS_FILE} && \
 	fly -t ${TARGET} unpause-pipeline -p ${2} && \
 	fly -t ${TARGET} expose-pipeline -p ${2}
 }
@@ -21,6 +21,10 @@ java() {
 
 dotnet() {
   common dotnet dotnet-dependencies
+}
+
+dotnet-releases() {
+  common dotnet dotnet-specific-versions pipeline-releases.yaml
 }
 
 if test -n "${CONCOURSE_SECRETS_FILE:-}"; then
@@ -53,8 +57,12 @@ java)
 dotnet)
 	dotnet
   ;;
+dotnet-releases)
+	dotnet-releases
+  ;;
+
 *)
-  echo "You didn't specify a pipeline to deploy. Available options: brats, buildpacks, java, dotnet"
+  echo "You didn't specify a pipeline to deploy. Available options: brats, buildpacks, java, dotnet, dotnet-releases"
 	exit 1
   ;;
 esac
