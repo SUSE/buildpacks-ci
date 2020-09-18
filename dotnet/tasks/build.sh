@@ -162,6 +162,10 @@ function build() {
         else
 		    # Since dotnet 3.x, upstream doesn't seem to handle building and extraction anymore: https://github.com/cloudfoundry/buildpacks-ci/commit/ea6fb512335d32980018047e7d2451ae6cf1ea3b
             [ -d "artifacts/bin/redist/Debug/dotnet" ] && mv artifacts/bin/redist/Debug/dotnet ${out}
+						if [ -d "artifacts/tmp/Debug/dotnet" ];
+						then
+							mv artifacts/tmp/Debug/dotnet ${out}
+						fi
         fi
 	popd
 }
@@ -180,19 +184,20 @@ if [ "$BUILD" = true ]; then
     fi
 
 		echo "Building dotnet version: ${i}"
-		build "${i}" "${DOTNET_SHA}" "${ROOTDIR}/${i}-build"
+		builddir="${ROOTDIR}/${i}-build"
+		build "${i}" "${DOTNET_SHA}" "$builddir"
 		# Extract dependencies from sdk and build separate dependencies
-		ruby ${ROOTDIR}/ci/dotnet/tasks/extractor.rb ${STACK} ${i} "${ROOTDIR}/${i}-build"
+		ruby ${ROOTDIR}/ci/dotnet/tasks/extractor.rb ${STACK} ${i} "$builddir"
 
 		[ ! -d "${ROOTDIR}/artifacts" ] && mkdir -p "${ROOTDIR}"/artifacts
 		mv *.tar.xz "${ROOTDIR}"/artifacts
 
 		mkdir -p "${ROOTDIR}"/"${i}"-src/tmp
 		mkdir -p "${ROOTDIR}"/"${i}"-src/cache
-		
+
 		mv "${ROOTDIR}/git.dotnet-cli" "${ROOTDIR}"/"${i}"-src/source
 
-		# Get temp files 
+		# Get temp files
 		for s in "/tmp/.*.cs" "/tmp/VBCSCompiler";
 		do
 			# Best effort, as aren't necessary files left there.
