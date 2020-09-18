@@ -62,11 +62,7 @@ function build() {
 	fi
 
 	if [ "$LOCAL_BUILD" = true ]; then
-	    if [[ "$MAJOR" -eq "2" ]]; then
-		  [ ! -d "git.dotnet-cli" ] && git clone https://github.com/dotnet/cli git.dotnet-cli
-		else
-		  [ ! -d "git.dotnet-cli" ] && git clone https://github.com/dotnet/sdk git.dotnet-cli
-		fi
+		[ ! -d "git.dotnet-cli" ] && git clone https://github.com/dotnet/cli git.dotnet-cli
 		pushd git.dotnet-cli
 			echo "Trying to checkout Dotnet version: ${version}"
 			set +e
