@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null && pwd)"
 ROOTDIR=$DIR/../../../
 STACK="${STACK:-sle15}"
 BUILD="${BUILD:-true}"
@@ -48,8 +48,7 @@ function build() {
 	local out=$3
 
 	regex_extract_version="([0-9]+)\.([0-9]+)\.([0-9]+)"
-	if [[ $version =~ $regex_extract_version ]]
-	then
+	if [[ $version =~ $regex_extract_version ]]; then
 		MAJOR="${BASH_REMATCH[1]}"
 		MINOR="${BASH_REMATCH[2]}"
 		PATCH="${BASH_REMATCH[3]}"
@@ -64,17 +63,17 @@ function build() {
 	if [ "$LOCAL_BUILD" = true ]; then
 		[ ! -d "git.dotnet-cli" ] && git clone https://github.com/dotnet/cli git.dotnet-cli
 		pushd git.dotnet-cli
-			echo "Trying to checkout Dotnet version: ${version}"
-			set +e
-			if git rev-parse v${version}+dependencies >/dev/null 2>&1; then
-				git checkout v${version}+dependencies
-			elif git rev-parse v${version} >/dev/null 2>&1; then
-				git checkout v${version}
-			else
-				echo "No branch exists for that version. Bailing out"
-				exit 1
-			fi
-			set -e
+		echo "Trying to checkout Dotnet version: ${version}"
+		set +e
+		if git rev-parse v${version}+dependencies >/dev/null 2>&1; then
+			git checkout v${version}+dependencies
+		elif git rev-parse v${version} >/dev/null 2>&1; then
+			git checkout v${version}
+		else
+			echo "No branch exists for that version. Bailing out"
+			exit 1
+		fi
+		set -e
 		popd
 	fi
 
@@ -88,85 +87,77 @@ function build() {
 	if [[ ! -z "$sha" ]]; then
 		echo "Checking out SHA (from depwatcher) $sha"
 		pushd git.dotnet-cli
-			git checkout $sha
+		git checkout $sha
 		popd
 	fi
 
 	echo "Building dotnet $version for $STACK stack in $out"
 	pushd git.dotnet-cli
 
-		# See https://github.com/cloudfoundry/buildpacks-ci/blob/2506ca13addb599c4fda9aaa68d5ba8586e3f40d/tasks/build-binary-new/builder.rb#L177
-		if [[ "$MAJOR" -eq "2" ]] && \
-			[[ "$MINOR" -eq "1" ]] && \
-			[[ "$PATCH" -ge "4" ]] && \
-			[[ "$PATCH" -lt "300" ]]
-		then
-			sed -i 's/WriteDynamicPropsToStaticPropsFiles "\${args\[\@\]}"/WriteDynamicPropsToStaticPropsFiles/' run-build.sh
+	# See https://github.com/cloudfoundry/buildpacks-ci/blob/2506ca13addb599c4fda9aaa68d5ba8586e3f40d/tasks/build-binary-new/builder.rb#L177
+	if [[ "$MAJOR" -eq "2" ]] &&
+		[[ "$MINOR" -eq "1" ]] &&
+		[[ "$PATCH" -ge "4" ]] &&
+		[[ "$PATCH" -lt "300" ]]; then
+		sed -i 's/WriteDynamicPropsToStaticPropsFiles "\${args\[\@\]}"/WriteDynamicPropsToStaticPropsFiles/' run-build.sh
+	fi
+
+	if [[ "$MAJOR" -eq "2" ]] &&
+		[[ "$MINOR" -eq "0" ]] &&
+		[[ "$PATCH" -eq "3" ]]; then
+		sed -i 's/sles/opensuse/' /etc/os-release
+		sed -i 's/12.3/42.1/' /etc/os-release
+	fi
+
+	if [[ "$MAJOR" -eq "2" ]] &&
+		[[ "$MINOR" -eq "1" ]] &&
+		[[ "$PATCH" -eq "401" ]]; then
+		# Handles: https://github.com/cloudfoundry/buildpacks-ci/blob/2506ca13addb599c4fda9aaa68d5ba8586e3f40d/tasks/build-binary-new/builder.rb#L164
+		git cherry-pick 257cf7a4784cc925742ef4e2706e752ab1f578b0
+	fi
+
+	if [[ "$MAJOR" -eq "2" ]] &&
+		[[ "$MINOR" -eq "1" ]] &&
+		[[ "$PATCH" -eq "805" ]]; then
+		# While 2.1.805 is available in blobs https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/2.1/releases.json,
+		# at the time of writing there is no official tag in the dotnet-cli repository.
+		# The branch https://github.com/dotnet/sdk/commits/release/2.1.8xx shows that's the matching commit
+		# given also the dependency versions that upstream repackaged (see https://github.com/cloudfoundry/dotnet-core-buildpack/releases/tag/v2.3.8 )
+		# Depwatcher stopped to give sha back, as now upstream consumes blobs directly
+		git checkout 685649c937ac5d06b801a43fb80e625be75d4aec
+	fi
+
+	if [[ "$MAJOR" -eq "3" ]] &&
+		[[ "$MINOR" -eq "1" ]] &&
+		[[ "$PATCH" -eq "101" ]]; then
+		git apply "$ROOTDIR/ci/dotnet/patches/fix_dotnet_deps_3_1_101.patch"
+	fi
+
+	if [[ "$MAJOR" -eq "3" ]] &&
+		[[ "$MINOR" -eq "1" ]] &&
+		[[ "$PATCH" -eq "302" ]]; then
+		git apply "$ROOTDIR/ci/dotnet/patches/fix_dotnet_deps_3_1_302.patch"
+	fi
+
+	if [[ "$MAJOR" -eq "2" ]]; then
+		bash build.sh /t:Compile
+	else
+		bash build.sh
+	fi
+
+	# NOTE: To run a full build, including of self-tests: bash run-build.sh
+
+	# Handles: https://github.com/cloudfoundry/buildpacks-ci/blob/2506ca13addb599c4fda9aaa68d5ba8586e3f40d/tasks/build-binary-new/builder.rb#L190
+	if [[ "$MAJOR" -eq "2" ]]; then
+		[ -d "artifacts/${OS}-x64/stage2" ] && mv artifacts/${OS}-x64/stage2 ${out}
+		[ -d "bin/2/${OS}-x64/dotnet" ] && mv bin/2/${OS}-x64/dotnet ${out}
+	else
+		# Since dotnet 3.x, upstream doesn't seem to handle building and extraction anymore: https://github.com/cloudfoundry/buildpacks-ci/commit/ea6fb512335d32980018047e7d2451ae6cf1ea3b
+		[ -d "artifacts/bin/redist/Debug/dotnet" ] && mv artifacts/bin/redist/Debug/dotnet ${out}
+		if [ -d "artifacts/tmp/Debug/dotnet" ]; then
+			mv artifacts/tmp/Debug/dotnet ${out}
 		fi
-
-		if [[ "$MAJOR" -eq "2" ]] && \
-			[[ "$MINOR" -eq "0" ]] && \
-			[[ "$PATCH" -eq "3" ]]
-		then
-			sed -i 's/sles/opensuse/' /etc/os-release
-			sed -i 's/12.3/42.1/' /etc/os-release
-		fi
-
-		if [[ "$MAJOR" -eq "2" ]] && \
-			[[ "$MINOR" -eq "1" ]] && \
-			[[ "$PATCH" -eq "401" ]]
-		then
-			# Handles: https://github.com/cloudfoundry/buildpacks-ci/blob/2506ca13addb599c4fda9aaa68d5ba8586e3f40d/tasks/build-binary-new/builder.rb#L164
-			git cherry-pick 257cf7a4784cc925742ef4e2706e752ab1f578b0
-		fi
-
-		if [[ "$MAJOR" -eq "2" ]] && \
-			[[ "$MINOR" -eq "1" ]] && \
-			[[ "$PATCH" -eq "805" ]]
-		then
-			# While 2.1.805 is available in blobs https://dotnetcli.blob.core.windows.net/dotnet/release-metadata/2.1/releases.json,
-			# at the time of writing there is no official tag in the dotnet-cli repository.
-			# The branch https://github.com/dotnet/sdk/commits/release/2.1.8xx shows that's the matching commit
-			# given also the dependency versions that upstream repackaged (see https://github.com/cloudfoundry/dotnet-core-buildpack/releases/tag/v2.3.8 )
-			# Depwatcher stopped to give sha back, as now upstream consumes blobs directly
-			git checkout 685649c937ac5d06b801a43fb80e625be75d4aec
-		fi
-
-		if [[ "$MAJOR" -eq "3" ]] && \
-			[[ "$MINOR" -eq "1" ]] && \
-			[[ "$PATCH" -eq "101" ]]
-		then
-			git apply "$ROOTDIR/ci/dotnet/patches/fix_dotnet_deps_3_1_101.patch"
-		fi
-
-		if [[ "$MAJOR" -eq "3" ]] && \
-			[[ "$MINOR" -eq "1" ]] && \
-			[[ "$PATCH" -eq "302" ]]
-		then
-			git apply "$ROOTDIR/ci/dotnet/patches/fix_dotnet_deps_3_1_302.patch"
-		fi
-
-
-		if [[ "$MAJOR" -eq "2" ]]; then
-			bash build.sh /t:Compile
-		else
-			bash build.sh
-		fi
-
-		# NOTE: To run a full build, including of self-tests: bash run-build.sh
-
-		# Handles: https://github.com/cloudfoundry/buildpacks-ci/blob/2506ca13addb599c4fda9aaa68d5ba8586e3f40d/tasks/build-binary-new/builder.rb#L190
-        if [[ "$MAJOR" -eq "2" ]]; then
-			[ -d "artifacts/${OS}-x64/stage2" ] && mv artifacts/${OS}-x64/stage2 ${out}
-			[ -d "bin/2/${OS}-x64/dotnet" ] && mv bin/2/${OS}-x64/dotnet ${out}
-        else
-		    # Since dotnet 3.x, upstream doesn't seem to handle building and extraction anymore: https://github.com/cloudfoundry/buildpacks-ci/commit/ea6fb512335d32980018047e7d2451ae6cf1ea3b
-            [ -d "artifacts/bin/redist/Debug/dotnet" ] && mv artifacts/bin/redist/Debug/dotnet ${out}
-						if [ -d "artifacts/tmp/Debug/dotnet" ];
-						then
-							mv artifacts/tmp/Debug/dotnet ${out}
-						fi
-        fi
+	fi
 	popd
 }
 
@@ -176,12 +167,11 @@ if [[ -z "${DOTNET_VERSION}" ]]; then
 fi
 
 if [ "$BUILD" = true ]; then
-	for i in ${DOTNET_VERSION}
-	do
-    if [[ $i =~ .*-preview.* ]]; then
-      echo "Skip preview version ${i}"
-      continue
-    fi
+	for i in ${DOTNET_VERSION}; do
+		if [[ $i =~ .*-preview.* ]]; then
+			echo "Skip preview version ${i}"
+			continue
+		fi
 
 		echo "Building dotnet version: ${i}"
 		builddir="${ROOTDIR}/${i}-build"
@@ -198,14 +188,12 @@ if [ "$BUILD" = true ]; then
 		mv "${ROOTDIR}/git.dotnet-cli" "${ROOTDIR}"/"${i}"-src/source
 
 		# Get temp files
-		for s in "/tmp/.*.cs" "/tmp/VBCSCompiler";
-		do
+		for s in "/tmp/.*.cs" "/tmp/VBCSCompiler"; do
 			# Best effort, as aren't necessary files left there.
 			mv "${s}" "${ROOTDIR}"/"${i}"-src/tmp/ || true
 		done
 
-		for s in "${ROOTDIR}/${i}-src/source/.dotnet_stage0" "$HOME/.dotnet" "$HOME/.nuget" "$HOME/.local/share/NuGet";
-		do
+		for s in "${ROOTDIR}/${i}-src/source/.dotnet_stage0" "$HOME/.dotnet" "$HOME/.nuget" "$HOME/.local/share/NuGet"; do
 
 			if [ -d "${s}" ]; then
 				mv "${s}" "${ROOTDIR}"/"${i}"-src/cache/
