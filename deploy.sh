@@ -19,10 +19,6 @@ java() {
 }
 
 
-dotnet() {
-  common dotnet dotnet-dependencies
-}
-
 if test -n "${CONCOURSE_SECRETS_FILE:-}"; then
     if test -r "${CONCOURSE_SECRETS_FILE:-}" ; then
         secrets_file="${CONCOURSE_SECRETS_FILE}"
@@ -50,11 +46,8 @@ buildpacks)
 java)
 	java
   ;;
-dotnet)
-	dotnet
-  ;;
 *)
-  echo "You didn't specify a pipeline to deploy. Available options: brats, buildpacks, java, dotnet"
+  echo "You didn't specify a pipeline to deploy. Available options: brats, buildpacks, java"
 	exit 1
   ;;
 esac
