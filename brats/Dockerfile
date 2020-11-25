@@ -1,5 +1,5 @@
 # docker build -t splatform/concourse-brats .
-FROM opensuse/leap:15.1
+FROM registry.opensuse.org/opensuse/leap:15.1
 
 RUN zypper ar https://download.opensuse.org/repositories/devel:/languages:/go/openSUSE_Leap_15.1/devel:languages:go.repo
 RUN zypper --gpg-auto-import-keys -n in --from=devel_languages_go go1.13
